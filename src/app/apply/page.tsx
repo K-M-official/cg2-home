@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "../../components/Button";
-import { Input } from "../../components/Input";
-import { Label } from "../../components/Label";
-import { Textarea } from "../../components/TextArea";
+import { Button } from "../../components/tremor/Button";
+import { Input } from "../../components/tremor/Input";
+import { Label } from "../../components/tremor/Label";
+import { Textarea } from "../../components/tremor/TextArea";
 import { useTexts } from "../../hooks/useTexts";
 
 export default function ApplyPage() {

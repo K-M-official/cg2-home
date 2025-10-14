@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useTexts } from "../../hooks/useTexts";
 import Image from "next/image";
-import { Button } from "@/components/Button";
+import { Button } from "@/components/tremor/Button";
 
 export default function CloudPage() {
   const t = useTexts();
   return (
-    <main className="max-w-5xl mx-auto px-6 py-12">
+    <main className="max-w-5xl mx-auto px-6 py-12 min-h-screen">
       {/* 统一视图：根据媒体查询切换布局与样式，复用同一套 DOM */}
       <section
         className="grid md:grid-cols-2 sm:grid-cols-1 gap-8 items-center"

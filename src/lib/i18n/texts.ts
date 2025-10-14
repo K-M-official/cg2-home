@@ -1,5 +1,5 @@
 export const texts = {
-  appName: "CloudGrave",
+  appName: "Permane.world",
   navApply: "申请",
   navMemorial: "追忆廊",
   navCloud: "云祭奠",

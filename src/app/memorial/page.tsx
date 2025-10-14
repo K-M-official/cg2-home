@@ -3,13 +3,52 @@
 import Link from "next/link";
 import { useTexts } from "../../hooks/useTexts";
 import Image from "next/image";
-import { Button } from "@/components/Button";
+import { Button } from "@/components/tremor/Button";
+
+import GridMotion from '@/components/reactbits/GridMotion';
+
+// note: you'll need to make sure the parent container of this component is sized properly
+const items = [
+  'Item 1',
+  <div key='jsx-item-1'>Custom JSX Content</div>,
+  'https://images.unsplash.com/photo-1723403804231-f4e9b515fe9d?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'Item 2',
+  <div key='jsx-item-2'>Custom JSX Content</div>,
+  'Item 4',
+  <div key='jsx-item-2'>Custom JSX Content</div>,
+  'https://images.unsplash.com/photo-1723403804231-f4e9b515fe9d?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'Item 5',
+  <div key='jsx-item-2'>Custom JSX Content</div>,
+  'Item 7',
+  <div key='jsx-item-2'>Custom JSX Content</div>,
+  'https://images.unsplash.com/photo-1723403804231-f4e9b515fe9d?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'Item 8',
+  <div key='jsx-item-2'>Custom JSX Content</div>,
+  'Item 10',
+  <div key='jsx-item-3'>Custom JSX Content</div>,
+  'https://images.unsplash.com/photo-1723403804231-f4e9b515fe9d?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'Item 11',
+  <div key='jsx-item-2'>Custom JSX Content</div>,
+  'Item 13',
+  <div key='jsx-item-4'>Custom JSX Content</div>,
+  'https://images.unsplash.com/photo-1723403804231-f4e9b515fe9d?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'Item 14',
+  // Add more items as needed
+];
+
 
 export default function MemorialPage() {
   const t = useTexts();
   return (
-    <main className="max-w-5xl mx-auto px-6 py-12">
+    <main className="max-w-5xl mx-auto px-6 py-12 min-h-screen">
       {/* 统一视图：根据媒体查询切换布局与样式，复用同一套 DOM */}
+      <div 
+        className="fixed inset-0 w-full h-full overflow-hidden"
+        style={{ zIndex: -1 }}
+      >
+        <GridMotion items={items as never[]} />
+      </div>
+      
       <section
         className="grid md:grid-cols-2 sm:grid-cols-1 gap-8 items-center"
       >

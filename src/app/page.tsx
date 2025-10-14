@@ -4,14 +4,17 @@ import Link from "next/link";
 import { useTexts } from "../hooks/useTexts";
 import Image from "next/image";
 import { Card } from "@/components/Card";
-import { Button } from "@/components/Button";
-
+import { Button } from "@/components/tremor/Button";
+import Threads from "@/components/reactbits/Threads";
 
 export default function Home() {
   const t = useTexts();
   return (
-    <main className="min-h-[calc(100vh-14rem)]">
-      <section className="relative flex flex-col items-center justify-center text-center min-h-[calc(100vh-7rem)] px-6">
+    <Overlay>
+      <section className="relative min-h-screen 
+      flex flex-col items-center justify-center text-center 
+      p-6 pb-24" 
+      style={{ zIndex: 10 }}>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-4 max-w-3xl">
           {t.heroTitle}
         </h1>
@@ -19,11 +22,11 @@ export default function Home() {
           {t.heroSubtitle}
         </p>
         <Button asChild className="bg-white/10 px-4 py-2" variant="ghost">
-          <Link href="/apply"> {t.heroApply} </Link>
+          <Link href="/memorial"> {t.heroApply} </Link>
         </Button>
       </section>
 
-      <section className="max-w-5xl mx-auto px-6 py-12">
+      <section className="max-w-5xl mx-auto px-6 py-12 relative" style={{ zIndex: 10 }}>
         <h2 className="text-2xl font-semibold mb-2">{t.sectionProducts}</h2>
         <p className="text-sm mb-6">{t.sectionIntro}</p>
         <div className="grid gap-6 sm:grid-cols-2">
@@ -59,7 +62,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="max-w-5xl mx-auto px-6 pb-24">
+      <section className="max-w-5xl mx-auto px-6 pb-24 relative" style={{ zIndex: 10 }}>
         <h2 className="text-2xl font-semibold mb-2">{t.galleryTitle}</h2>
         <p className="text-sm mb-6">
           <span className="italic">{t.galleryQuoteEn}</span> —— {t.galleryQuoteZh}
@@ -99,6 +102,33 @@ export default function Home() {
           </div>
         </div>
       </section>
+    </Overlay>
+  );
+}
+
+
+function Overlay({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="relative w-full h-full overflow-hidden">
+      {/* 背景Threads - 限制高度为100vh */}
+      <div 
+        className="fixed inset-0 w-full h-full overflow-hidden"
+        style={{ zIndex: -1 }}
+      >
+        <Threads
+          amplitude={1}
+          distance={0}
+          enableMouseInteraction={true}
+        />
+      </div>
+
+      {/* 内容容器 - 允许滚动 */}
+      <div 
+        className="relative min-h-screen"
+        style={{ zIndex: 10 }}
+      >
+        {children}
+      </div>
     </main>
   );
 }

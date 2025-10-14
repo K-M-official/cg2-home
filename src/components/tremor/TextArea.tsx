@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { cx, focusInput, hasErrorInput } from "@/lib/utils"
+import { cx, focusInput, hasErrorInput } from "@/lib/tremor/utils"
 
 interface TextareaProps
   extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {

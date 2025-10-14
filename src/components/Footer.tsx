@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useTexts } from "../hooks/useTexts";
-import { Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "./Drawer";
- 
-import { misc } from "../lib/misc";
+import { Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "./tremor/Drawer";
+
+import { misc } from "../lib/i18n/misc";
 import Link from "next/link";
 import { RiGithubFill, RiYoutubeFill, RiBilibiliFill, RiTwitterXFill } from "@remixicon/react";
 
@@ -34,7 +34,10 @@ function FooterItem({ title, body }: { title: string; body: ReadonlyArray<string
 export default function Footer() {
   const t = useTexts();
   return (
-    <footer className="w-full border-t border-black/10 dark:border-white/10 mt-16 px-10">
+    <footer className="w-full border-t 
+    bg-background/30 backdrop-blur 
+      border-b border-black/10 dark:border-white/10
+       mt-16 px-10">
       <div className="mx-auto max-w-6xl px-4 py-10 grid grid-cols-1 sm:grid-cols-3 gap-6">
         {/* 第一列：版权、公司名与社交链接 */}
         <div className="space-y-3">
