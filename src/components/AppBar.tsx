@@ -66,7 +66,7 @@ export default function AppBar() {
 
 
 export function LanguageSwitcher() {
-  const { t, setTexts } = useTexts();
+  const { t, tt, setTexts } = useTexts();
   const data = [
     {
       value: "zh-CN",
@@ -84,7 +84,7 @@ export function LanguageSwitcher() {
 
   return (
     <>
-      <Select defaultValue="zh-CN"
+      <Select defaultValue={tt}
         onValueChange={(value) => {
           console.log(value)
           setTexts(value as i18nTypes)

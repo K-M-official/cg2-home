@@ -50,7 +50,7 @@ const DrawerOverlay = React.forwardRef<
         // base
         "fixed inset-0 z-50 overflow-y-auto",
         // background color
-        "bg-black/30",
+        "bg-background/30 backdrop-blur",
         // transition
         "data-[state=closed]:animate-hide data-[state=open]:animate-dialog-overlay-show",
         className,
@@ -81,12 +81,15 @@ const DrawerContent = React.forwardRef<
             // border color
             "border-gray-200 dark:border-gray-900",
             // background color
-            "bg-white dark:bg-[#090E1A]",
+            // "bg-white dark:bg-[#090E1A]",
             // transition
             "data-[state=closed]:animate-drawer-slide-right-and-fade data-[state=open]:animate-drawer-slide-left-and-fade",
             focusRing,
             className,
           )}
+          style={{
+            backgroundColor: "var(--background)",
+          }}
           {...props}
         />
       </DrawerOverlay>

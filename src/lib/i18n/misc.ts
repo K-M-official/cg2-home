@@ -1,7 +1,7 @@
 import { i18nPolicies } from "@/hooks/useTexts";
 import { APPNAME } from "./texts";
 
-export const misc = {
+export const ZhMisc = {
   howItWorksTitle: "如何运作",
   howItWorksBody: [
     APPNAME + "以极简与隐私为先的原则设计。您在追忆廊发布的图文将上载至 Web3 Arweave 网络，形成不可篡改的去中心化存证；云祭奠的空间配置与交互数据，将直接上链，不经过我们的中转存储。",
@@ -38,7 +38,7 @@ export const EnMisc = {
     "Using " + APPNAME + " represents that you are at least the age of majority and have full legal capacity. Please do not upload content that violates laws, infringes on rights, defames, incites hatred, violence, or other illegal or public order content.",
     "The platform does not assume the obligation to review user-generated content, but reserves the right to take down related content and restrict access according to laws, regulations, rights holder notifications, and platform rules.",
     "For service exceptions or data delays caused by blockchain network congestion, third-party node exceptions, smart contract risks, or unforeseeable factors, the platform does not assume responsibility for direct or indirect losses resulting from such exceptions.",
-    "If you use the fee托管与提取 功能, you should properly store the keys, mnemonics, and wallet permissions yourself, and the asset risks resulting from such operations are borne by you.",
+    "If you use the fee托管与提取 functionality, you should properly store the keys, mnemonics, and wallet permissions yourself, and the asset risks resulting from such operations are borne by you.",
   ],
   privacyTitle: "Privacy Policy",
   privacyBody: [

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { EnTexts, ZhTexts } from "../lib/i18n/texts";
-import { misc } from "@/lib/i18n/misc";
+import { ZhMisc, EnMisc } from "@/lib/i18n/misc";
 
 export interface i18nTexts {
   navApply: string;
@@ -76,26 +76,31 @@ export interface i18nPolicies {
 }
 
 type typeT = i18nTexts & i18nPolicies;
+export type i18nTypes = "zh-CN" | "en-US";
 
 interface I18nContextType {
+  tt: i18nTypes;
   t: typeT;
   setTexts: (i18n: i18nTypes) => void;
 }
 
 const I18nContext = createContext<I18nContextType | null>(null);
 
-export type i18nTypes = "zh-CN" | "en-US";
 const i18nMap = {
-  "zh-CN": { ...ZhTexts, ...misc },
-  "en-US": { ...EnTexts, ...misc },
+  "zh-CN": { ...ZhTexts, ...ZhMisc },
+  "en-US": { ...EnTexts, ...EnMisc },
 } as const satisfies Record<i18nTypes, typeT>;
 
+const DEFAULT_I18N = "en-US";
+
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [texts, setTexts] = useState<typeT>({ ...ZhTexts, ...misc });
+  const [texts, setTexts] = useState<typeT>(i18nMap[DEFAULT_I18N]);
+  const [tt, setTt] = useState<i18nTypes>(DEFAULT_I18N);
 
   const setI18n = (i18n: i18nTypes) => {
-    const _i18n = i18n in i18nMap ? i18n : "zh-CN";
+    const _i18n = i18n in i18nMap ? i18n : DEFAULT_I18N;
     setTexts(i18nMap[_i18n]);
+    setTt(_i18n);
     localStorage.setItem("i18n", _i18n);
     document.documentElement.setAttribute("lang", _i18n);
   }
@@ -104,13 +109,13 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     const stored = (typeof window !== "undefined" && localStorage.getItem("i18n")) as
       | i18nTypes
       | null;
-    const initial = stored ?? "zh-CN";
+    const initial = stored ?? DEFAULT_I18N;
     setI18n(initial);
   }, []);
 
 
   return (
-    <I18nContext.Provider value={{ t: texts, setTexts: setI18n }}>
+    <I18nContext.Provider value={{ t: texts, tt: tt, setTexts: setI18n }}>
       {children}
     </I18nContext.Provider>
   );
