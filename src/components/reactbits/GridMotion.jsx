@@ -7,7 +7,7 @@ import './GridMotion.css';
 const GridMotion = ({ items = [], gradientColor = 'black' }) => {
   const gridRef = useRef(null);
   const rowRefs = useRef([]);
-  const mouseXRef = useRef(window.innerWidth / 2);
+  const mouseXRef = useRef(0);
 
   const totalItems = 28;
   const defaultItems = Array.from({ length: totalItems }, (_, index) => `Item ${index + 1}`);
@@ -21,6 +21,8 @@ const GridMotion = ({ items = [], gradientColor = 'black' }) => {
     };
 
     const updateMotion = () => {
+      if (typeof window === 'undefined') return;
+      
       const maxMoveAmount = 300;
       const baseDuration = 0.8;
       const inertiaFactors = [0.6, 0.4, 0.3, 0.2];
@@ -42,10 +44,14 @@ const GridMotion = ({ items = [], gradientColor = 'black' }) => {
 
     const removeAnimationLoop = gsap.ticker.add(updateMotion);
 
-    window.addEventListener('mousemove', handleMouseMove);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mousemove', handleMouseMove);
+    }
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('mousemove', handleMouseMove);
+      }
       removeAnimationLoop();
     };
   }, []);

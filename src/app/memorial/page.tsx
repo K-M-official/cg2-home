@@ -61,7 +61,7 @@ export default function MemorialPage() {
           <p className="mb-3">{t.memorialP2}</p>
           <p className="mb-6">{t.memorialP3}</p>
           <div className="flex gap-3">
-            <Button variant="ghost" className="bg-white/10" asChild>
+            <Button variant="ghost" className="bg-white/20 dark:bg-black/20" asChild>
               <Link href="https://memorial.permane.world" target="_blank" rel="noopener noreferrer">{t.memorialName}</Link>
             </Button>
           </div>
