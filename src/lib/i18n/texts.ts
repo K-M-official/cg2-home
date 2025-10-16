@@ -1,7 +1,8 @@
 import { i18nTexts } from "@/hooks/useTexts";
 
 export const APPNAME = "Permane.world";
-export const COPYRIGHT = "© "+new Date().getFullYear()+" "+APPNAME+" Corp.";
+export const CORPNAME = "K&M ERA LTD.";
+export const COPYRIGHT = "© "+new Date().getFullYear()+" "+CORPNAME;
 
 export const ZhTexts = {
   navApply: "申请",
@@ -11,6 +12,8 @@ export const ZhTexts = {
   heroTitle: "为您打造更温馨的回忆空间",
   heroSubtitle: "死亡不是终点，遗忘才是。",
   heroApply: "立即申请",
+  // 产品与跳转
+  goHaveATry: "前往",
   // 产品与跳转
   memorialName: "追忆廊",
   memorialDesc: "混合 Web3/Web2 的文章平台，存储至 Arweave，去中心化，支持祭奠与献花。",
@@ -58,7 +61,7 @@ export const ZhTexts = {
   imgWarfare2Text: "当喧嚣散尽，世界需要一种温柔的方式，去安放悲伤与爱。",
   
   // 关于我们
-  aboutTitle: "关于 "+APPNAME,
+  aboutTitle: "关于" ,
   aboutMission: "我们希望为因疾病与战争离世的亲人，留存可被轻触的记忆与可被守护的隐私。",
   aboutWhatWeDo: "我们构建了两项核心服务：去中心化的追忆廊与上链的云祭奠。前者将文字与图片存入 Arweave，后者以数字孪生承载对话与陪伴，数据直达链上。",
   aboutTeamTitle: "我们的团队",
@@ -76,6 +79,8 @@ export const EnTexts = {
   heroTitle: "Creating a warmer space for your memories",
   heroSubtitle: "Death is not the end, forgetting is.",
   heroApply: "Apply Now",
+  // 产品与跳转
+  goHaveATry: "Go To",
   // 产品与跳转
   memorialName: "Memorial",
   memorialDesc: "A hybrid Web3/Web2 article platform, stored on Arweave, decentralized, supporting memorial and flower offerings.",
@@ -123,7 +128,7 @@ export const EnTexts = {
   imgWarfare2Text: "When the noise fades, the world needs a gentle way to hold grief and love.",
 
   // 关于我们
-  aboutTitle: "About "+APPNAME,
+  aboutTitle: "About",
   aboutMission: "We hope to preserve touchable memories and protectable privacy for loved ones who passed away due to illness and war.",
   aboutWhatWeDo: "We built two core services: decentralized Memorial Hall and on-chain Cloud Memorial. The former stores text and images on Arweave, while the latter carries dialogue and companionship through digital twins, with data going directly on-chain.",
   aboutTeamTitle: "Our Team",

@@ -13,6 +13,9 @@ export interface i18nTexts {
   heroSubtitle: string;
   heroApply: string;
   // 产品与跳转
+  goHaveATry: string; 
+  
+  // 产品与跳转
   memorialName: string;
   memorialDesc: string;
   cloudName: string;

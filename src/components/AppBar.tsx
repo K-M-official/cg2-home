@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/tremor/Select"
 import { APPNAME } from "@/lib/i18n/texts";
+import { KMMemorialLogo } from "./LOGO";
 
 export default function AppBar() {
   const { t } = useTexts();
@@ -40,7 +41,9 @@ export default function AppBar() {
       border-b border-black/10 dark:border-white/10"
     >
       <div className="mx-auto max-w-6xl px-4 h-14 flex items-center justify-between gap-4">
-        <Link href="/" className="text-base font-semibold hover:opacity-90">{APPNAME}</Link>
+        <Link href="/" className="text-base font-semibold hover:opacity-90">
+          <KMMemorialLogo className="size-8" />
+        </Link>
         <div className="flex items-center gap-4">
           <Link href="/memorial" className="hover:opacity-90 whitespace-nowrap min-w-fit"> {t.navMemorial} </Link>
           <Link href="/cloud" className="hover:opacity-90 whitespace-nowrap min-w-fit"> {t.navCloud} </Link>
