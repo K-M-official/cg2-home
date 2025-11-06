@@ -45,7 +45,7 @@ export default function AppBar() {
           <KMMemorialLogo className="size-8" />
         </Link>
         <div className="flex items-center gap-4">
-          <Link href="/memorial" className="hover:opacity-90 whitespace-nowrap min-w-fit max-sm:hidden"> {t.navMemorial} </Link>
+          <Link href="/memorial/" className="hover:opacity-90 whitespace-nowrap min-w-fit max-sm:hidden"> {t.navMemorial} </Link>
           <Link href="/cloud" className="hover:opacity-90 whitespace-nowrap min-w-fit max-sm:hidden"> {t.navCloud} </Link>
           {/* <Link href="/apply" className="hover:opacity-90"> {t.navApply} </Link> */}
           <LanguageSwitcher />
