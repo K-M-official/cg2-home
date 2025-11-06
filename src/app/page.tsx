@@ -108,6 +108,7 @@ function Overlay({ children }: { children: React.ReactNode }) {
         <Threads
           amplitude={1}
           distance={0}
+          color={[1, 1, 1]}
           enableMouseInteraction={true}
         />
       </div>

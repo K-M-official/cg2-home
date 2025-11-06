@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useTexts } from "../../hooks/useTexts";
+import { useTexts } from "../../../hooks/useTexts";
 import Image from "next/image";
 import { Button } from "@/components/tremor/Button";
 
