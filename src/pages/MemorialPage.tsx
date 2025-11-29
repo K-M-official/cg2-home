@@ -5,29 +5,118 @@ import { MessageSquare, Share2, Heart, Gift, Flame, Flower } from 'lucide-react'
 import { FadeIn, Button, SectionTitle, Card, TextArea } from '../components/UI';
 import { RWABadge } from '../components/RWABadge';
 import { VirtualShop } from '../components/VirtualShop';
-import { MOCK_MEMORIALS, MEMORIAL_TEMPLATES } from '../constants';
-import { Memorial } from '../types';
+import { MEMORIAL_TEMPLATES, MOCK_MEMORIALS } from '../constants'; // Keep MOCK for fallback/templates
+import type { Memorial } from '../types';
+import { usePhantomWallet } from '../hooks/usePhantomWallet';
 
 const MemorialPage: React.FC = () => {
   const { id } = useParams();
+  const { walletAddress, connectWallet } = usePhantomWallet();
   const [memorial, setMemorial] = useState<Memorial | null>(null);
   const [message, setMessage] = useState('');
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [localStats, setLocalStats] = useState({ candles: 0, flowers: 0, tributes: 0 });
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch item details from API
   useEffect(() => {
-    // Simulate fetch
-    const found = MOCK_MEMORIALS.find(m => m.id === id) || MOCK_MEMORIALS[0];
-    setMemorial(found);
-    setLocalStats(found.stats);
+    const fetchMemorial = async () => {
+        if (!id) return;
+        try {
+            const response = await fetch(`/api/item/stats?item_id=${id}`);
+            if (response.ok) {
+                const data = await response.json();
+                const item = data.item;
+                
+                // Parse misc data
+                let parsedMisc: any = {};
+                try {
+                    parsedMisc = item.misc ? JSON.parse(item.misc) : {};
+                } catch { parsedMisc = {}; }
+
+                const mockFallback = MOCK_MEMORIALS[0]; // Fallback for styles
+
+                const mappedMemorial: Memorial = {
+                    id: String(item.id),
+                    name: item.title,
+                    type: parsedMisc.type || 'Person',
+                    dates: parsedMisc.dates || (parsedMisc.birthDate ? `${parsedMisc.birthDate} - ${parsedMisc.deathDate || ''}` : 'Unknown'),
+                    bio: item.description ? item.description.replace(/<[^>]+>/g, '') : 'No description',
+                    coverImage: parsedMisc.image || mockFallback.coverImage,
+                    images: parsedMisc.images || [],
+                    templateId: parsedMisc.templateId || 'ethereal-garden',
+                    timeline: parsedMisc.timeline || [],
+                    stats: { 
+                        candles: Math.floor(data.stats['1hour'] / 1), // Approximation from delta
+                        flowers: 0, 
+                        tributes: 0, 
+                        shares: 0 
+                    },
+                    messages: parsedMisc.messages || [],
+                    badgeId: `RWA-${item.id}`,
+                    pomScore: data.algorithm?.P || 0,
+                };
+                
+                setMemorial(mappedMemorial);
+                setLocalStats(mappedMemorial.stats);
+            } else {
+                console.error("Failed to fetch memorial details");
+                // Fallback to mock if API fails (for development/demo)
+                const found = MOCK_MEMORIALS.find(m => m.id === id);
+                if (found) {
+                    setMemorial(found);
+                    setLocalStats(found.stats);
+                } else {
+                    setError("Memorial not found");
+                }
+            }
+        } catch (error: any) {
+            console.error("Error fetching memorial:", error);
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchMemorial();
     window.scrollTo(0,0);
   }, [id]);
 
-  if (!memorial) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (error || !memorial) return <div className="min-h-screen flex items-center justify-center">Error: {error || "Memorial not found"}</div>;
 
   const template = MEMORIAL_TEMPLATES.find(t => t.id === memorial.templateId) || MEMORIAL_TEMPLATES[1];
 
-  const handlePurchase = (item: any) => {
+  const handlePurchase = async (item: any) => {
+      if (!walletAddress) {
+          try {
+              await connectWallet();
+          } catch (error) {
+              console.error("Wallet connection failed:", error);
+          }
+          return;
+      }
+
+      // Calculate delta based on item type
+      let delta = 1;
+      if (item.type === 'candle') delta = 1;
+      else if (item.type === 'flower') delta = 2;
+      else delta = 5;
+
+      // Call API to increment heat
+      try {
+          await fetch('/api/item/increment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ item_id: parseInt(memorial.id), delta })
+          });
+          console.log(`Heat increased by ${delta} for item ${memorial.id}`);
+      } catch (err) {
+          console.error('Failed to increment heat:', err);
+      }
+
       // Optimistic update
       setLocalStats(prev => {
           if (item.type === 'candle') return { ...prev, candles: prev.candles + 1 };
@@ -44,6 +133,8 @@ const MemorialPage: React.FC = () => {
         onClose={() => setIsShopOpen(false)} 
         onPurchase={handlePurchase} 
         memorialType={memorial.type}
+        walletAddress={walletAddress}
+        connectWallet={connectWallet}
       />
       
       {/* Dynamic Header based on Template */}
@@ -71,8 +162,8 @@ const MemorialPage: React.FC = () => {
       </div>
 
       {/* Interaction Bar - POM Drivers */}
-      <div className="max-w-4xl mx-auto px-6 -mt-8 relative z-30">
-          <Card className="flex flex-wrap justify-between items-center gap-4 bg-white/90 backdrop-blur-md shadow-xl border-white/50">
+      <div className="max-w-7xl mx-auto px-6 -mt-8 relative z-30">
+          <Card className="flex flex-wrap justify-between items-center gap-4 bg-white/90 backdrop-blur-md shadow-xl border-white/50 max-w-5xl mx-auto">
              <div className="flex gap-6 md:gap-12 mx-auto md:mx-0">
                  <div className="text-center">
                      <div className="flex items-center gap-1 text-orange-500 justify-center">
@@ -107,13 +198,13 @@ const MemorialPage: React.FC = () => {
           </Card>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 mt-12 pb-24">
+      <div className="max-w-7xl mx-auto px-6 mt-12 pb-24">
          
          {/* Bio */}
          <FadeIn delay={0.2}>
             <div className="text-center py-8 mb-16">
                 <span className="inline-block w-8 h-1 bg-slate-300 mb-6 rounded-full"></span>
-                <p className="font-serif text-2xl md:text-3xl leading-relaxed text-slate-700 italic max-w-2xl mx-auto">
+                <p className="font-serif text-2xl md:text-3xl leading-relaxed text-slate-700 italic max-w-4xl mx-auto">
                     "{memorial.bio}"
                 </p>
                 {memorial.onChainHash && (

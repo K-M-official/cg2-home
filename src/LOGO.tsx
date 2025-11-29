@@ -1,4 +1,4 @@
-import { HTMLAttributes } from "react";
+import type { HTMLAttributes } from "react";
 import { cx } from "class-variance-authority";
 
 const KMMemorialLogo = (props: HTMLAttributes<HTMLOrSVGElement>) => {

@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, TrendingUp, TrendingDown, Minus, Shield, Globe, Lock } from 'lucide-react';
 import { FadeIn, SectionTitle, TechCard, Button } from '../components/UI';
-import { MOCK_LEADERBOARD, MOCK_NEWS } from '../constants';
+import { MOCK_NEWS } from '../constants';
 import { RWABadge } from '../components/RWABadge';
+import { useLeaderboard } from '../hooks/useLeaderboard';
 
 const HeritagePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'public' | 'private'>('public');
+  const { leaderboard, loading, error } = useLeaderboard(10);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 pt-28 pb-12 px-6 relative overflow-hidden">
@@ -46,7 +48,27 @@ const HeritagePage: React.FC = () => {
                         Top 10 most visited and honored memorials this week, calculated by our <b>POM (Proof of Memory)</b> algorithm.
                     </p>
 
-                    {MOCK_LEADERBOARD.map((entry, index) => (
+                    {loading ? (
+                      <div className="text-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto"></div>
+                        <p className="text-white/50 text-sm mt-4">加载排行榜中...</p>
+                      </div>
+                    ) : error ? (
+                      <div className="text-center py-12">
+                        <p className="text-red-400">加载失败: {error}</p>
+                        <button 
+                          onClick={() => window.location.reload()}
+                          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                        >
+                          重新加载
+                        </button>
+                      </div>
+                    ) : leaderboard.length === 0 ? (
+                      <div className="text-center py-12">
+                        <p className="text-white/50">暂无排行榜数据</p>
+                      </div>
+                    ) : (
+                      leaderboard.map((entry, index) => (
                         <TechCard key={index} className="flex flex-col md:flex-row items-center gap-6 hover:bg-white/5 transition-colors">
                             <div className="flex items-center gap-4 w-full md:w-auto">
                                 <div className={`w-12 h-12 flex items-center justify-center rounded-full font-mono text-xl font-bold ${index === 0 ? 'bg-yellow-500/20 text-yellow-500' : index === 1 ? 'bg-slate-300/20 text-slate-300' : index === 2 ? 'bg-orange-700/20 text-orange-400' : 'bg-slate-800 text-slate-600'}`}>
@@ -68,6 +90,7 @@ const HeritagePage: React.FC = () => {
                                     <div className="text-2xl font-mono text-emerald-400">{entry.pomScore}</div>
                                     <div className="text-[10px] uppercase text-slate-500">POM Score</div>
                                 </div>
+                                
                                 <div className="text-center w-12">
                                     {entry.change === 'up' && <TrendingUp className="text-emerald-500 mx-auto" />}
                                     {entry.change === 'down' && <TrendingDown className="text-red-500 mx-auto" />}
@@ -75,7 +98,8 @@ const HeritagePage: React.FC = () => {
                                 </div>
                             </div>
                         </TechCard>
-                    ))}
+                      ))
+                    )}
                 </div>
 
                 {/* --- GLOBAL NEWS COLUMN --- */}
@@ -100,7 +124,7 @@ const HeritagePage: React.FC = () => {
                                 {item.relatedMemorialId && (
                                     <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-2">
                                         <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
-                                        <span className="text-[10px] text-slate-300">Linked to Rank #{MOCK_LEADERBOARD.find(m => m.memorial.id === item.relatedMemorialId)?.rank}</span>
+                                        <span className="text-[10px] text-slate-300">Linked to Memorial #{item.relatedMemorialId}</span>
                                     </div>
                                 )}
                             </TechCard>
@@ -147,7 +171,6 @@ const HeritagePage: React.FC = () => {
                 </div>
             </div>
         )}
-
       </div>
     </div>
   );

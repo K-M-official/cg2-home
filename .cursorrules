@@ -1,0 +1,5 @@
+本项目使用bun管理器，cloudflare框架
+
+worker/是后端
+src/是前端
+

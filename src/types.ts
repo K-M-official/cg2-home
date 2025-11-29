@@ -62,6 +62,7 @@ export interface LeaderboardEntry {
   rank: number;
   memorial: Memorial;
   pomScore: number;
+  raw?: number;
   change: 'up' | 'down' | 'same';
 }
 

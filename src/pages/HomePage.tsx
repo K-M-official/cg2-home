@@ -4,10 +4,12 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Star, Heart, Cloud, Globe, Hash } from 'lucide-react';
 import { FadeIn, Button, SectionTitle, Card, TechCard } from '../components/UI';
 import { ShootingStars } from '../components/ShootingStars';
-import { MOCK_LEADERBOARD, MOCK_NEWS } from '../constants';
+import { MOCK_NEWS } from '../constants';
+import { useLeaderboard } from '../hooks/useLeaderboard';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { leaderboard, loading, error } = useLeaderboard(3);
 
   return (
     <div className="min-h-screen bg-slate-900 overflow-x-hidden">
@@ -151,8 +153,22 @@ const HomePage: React.FC = () => {
                     <span>Weekly Top Remembered</span>
                     <span>POM Algorithm</span>
                  </div>
-                 {MOCK_LEADERBOARD.slice(0, 3).map((entry, i) => (
-                    <FadeIn key={i} delay={i * 0.1}>
+                 {loading ? (
+                   <div className="text-center py-8">
+                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+                     <p className="text-white/50 text-sm mt-4">加载中...</p>
+                   </div>
+                 ) : error ? (
+                   <div className="text-center py-8">
+                     <p className="text-red-400 text-sm">加载失败: {error}</p>
+                   </div>
+                 ) : leaderboard.length === 0 ? (
+                   <div className="text-center py-8">
+                     <p className="text-white/50 text-sm">暂无数据</p>
+                   </div>
+                 ) : (
+                   leaderboard.map((entry, i) => (
+                     <FadeIn key={i} delay={i * 0.1}>
                        <TechCard className="flex items-center gap-6 group hover:bg-white/5 transition-colors">
                           <div className="font-mono text-2xl text-blue-300 w-8">0{entry.rank}</div>
                           <img src={entry.memorial.coverImage} className="w-12 h-12 rounded-full object-cover border border-white/20" alt="" />
@@ -165,8 +181,9 @@ const HomePage: React.FC = () => {
                              <div className="text-slate-500 text-[10px] uppercase">POM Score</div>
                           </div>
                        </TechCard>
-                    </FadeIn>
-                 ))}
+                     </FadeIn>
+                   ))
+                 )}
               </div>
 
               {/* News Ticker Preview */}

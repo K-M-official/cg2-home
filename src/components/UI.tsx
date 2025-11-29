@@ -1,6 +1,6 @@
-import React, { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 // --- FadeIn Wrapper ---
 interface FadeInProps {
@@ -8,17 +8,23 @@ interface FadeInProps {
   delay?: number;
   className?: string;
 }
-export const FadeIn: React.FC<FadeInProps> = ({ children, delay = 0, className = "" }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.8, delay, ease: "easeOut" }}
-    className={className}
-  >
-    {children}
-  </motion.div>
-);
+export const FadeIn: React.FC<FadeInProps> = ({ children, delay = 0, className = "" }) => {
+  const [isInteractive, setIsInteractive] = React.useState(false);
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6, delay, ease: "easeOut" }}
+      className={className}
+      onAnimationComplete={() => setIsInteractive(true)}
+      style={{ pointerEvents: isInteractive ? 'auto' : 'none' }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 // --- Tender Button ---
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -69,8 +75,8 @@ export const TechCard: React.FC<{ children: ReactNode; className?: string; title
 );
 
 // --- Section Title ---
-export const SectionTitle: React.FC<{ title: string; subtitle?: string; light?: boolean }> = ({ title, subtitle, light = false }) => (
-  <div className="text-center mb-12">
+export const SectionTitle: React.FC<{ title: string; subtitle?: string; light?: boolean; className?: string }> = ({ title, subtitle, light = false, className = "" }) => (
+  <div className={`text-center ${className || 'mb-12'}`}>
     <h2 className={`font-serif text-3xl md:text-4xl mb-3 ${light ? 'text-white' : 'text-slate-800'}`}>{title}</h2>
     {subtitle && <p className={`font-light tracking-wide ${light ? 'text-slate-300' : 'text-slate-500'}`}>{subtitle}</p>}
   </div>

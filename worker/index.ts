@@ -1,11 +1,7 @@
-import { increment_item_window, get_item_with_stats, get_groups, get_items, get_item_algorithm_metrics } from './db';
+import { increment_item_window, get_item_with_stats, get_groups, get_items, get_item_algorithm_metrics, get_leaderboard } from './db';
 
 export default {
-  async fetch(request, env) {
-    if (!env.ASSETS) {
-      return new Response("ASSETS binding not configured", { status: 500 });
-    }
-
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname;
     const method = request.method;
@@ -15,33 +11,11 @@ export default {
     }
 
     // API 路由处理
-    if (pathname.startsWith('/memorial/api/')) {
-      return handleApi(request, env);
+    if (pathname.startsWith('/api/')) {
+      return await handleApi(request, env);
     }
 
-    // 处理 /memorial 路径下的请求
-    if (pathname.startsWith('/memorial')) {
-      // 将 /memorial 或 /memorial/xxx 转换为相应的路径
-      let assetPath = pathname.replace('/memorial', '') || '/index.html';
-      // 如果转换后是空字符串或只有斜杠，返回 index.html
-      if (assetPath === '' || assetPath === '/') {
-        assetPath = '/index.html';
-      }
-
-      const assetUrl = new URL(assetPath, url.origin);
-      assetUrl.search = url.search;
-
-      const modifiedRequest = new Request(assetUrl.toString(), {
-        method: request.method,
-        headers: request.headers,
-        body: request.body,
-      });
-
-      return env.ASSETS.fetch(modifiedRequest);
-    }
-
-    // 其他请求直接转发给 ASSETS binding
-    return env.ASSETS.fetch(request);
+    return new Response(JSON.stringify({ error: 'NOT_FOUND' }), { status: 404, headers: corsHeaders });
   },
 } satisfies ExportedHandler<Env>;
 
@@ -56,23 +30,28 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
   }
 
   // 增加 item 的滑动窗口计数
-  if (path === '/memorial/api/item/increment' && request.method === 'POST') {
+  if (path === '/api/item/increment' && request.method === 'POST') {
     return handleIncrement(request, env);
   }
 
   // 获取 item 的统计信息
-  if (path === '/memorial/api/item/stats' && request.method === 'GET') {
+  if (path === '/api/item/stats' && request.method === 'GET') {
     return handleItemStats(request, env);
   }
 
   // 获取所有 groups
-  if (path === '/memorial/api/groups' && request.method === 'GET') {
+  if (path === '/api/groups' && request.method === 'GET') {
     return handleGetGroups(request, env);
   }
 
   // 获取指定 group 的 items
-  if (path === '/memorial/api/items' && request.method === 'GET') {
+  if (path === '/api/items' && request.method === 'GET') {
     return handleGetItems(request, env);
+  }
+
+  // 获取排行榜
+  if (path === '/api/leaderboard' && request.method === 'GET') {
+    return handleGetLeaderboard(request, env);
   }
 
   return new Response(JSON.stringify({ error: 'NOT_FOUND' }), { status: 404, headers: corsHeaders });
@@ -87,7 +66,7 @@ const corsHeaders = {
 
 /**
  * 处理滑动窗口增量 API
- * POST /memorial/api/item/increment
+ * POST /api/item/increment
  * Body: { item_id: number, delta?: number }
  */
 async function handleIncrement(request: Request, env: Env): Promise<Response> {
@@ -130,7 +109,7 @@ async function handleIncrement(request: Request, env: Env): Promise<Response> {
 
 /**
  * 处理获取 item 统计信息 API
- * GET /memorial/api/item/stats?item_id=123
+ * GET /api/item/stats?item_id=123
  */
 async function handleItemStats(request: Request, env: Env): Promise<Response> {
   try {
@@ -188,7 +167,7 @@ async function handleItemStats(request: Request, env: Env): Promise<Response> {
 
 /**
  * 处理获取所有 groups API
- * GET /memorial/api/groups
+ * GET /api/groups
  */
 async function handleGetGroups(request: Request, env: Env): Promise<Response> {
   try {
@@ -209,7 +188,7 @@ async function handleGetGroups(request: Request, env: Env): Promise<Response> {
 
 /**
  * 处理获取指定 group 的 items API
- * GET /memorial/api/items?group_id=123
+ * GET /api/items?group_id=123
  */
 async function handleGetItems(request: Request, env: Env): Promise<Response> {
   try {
@@ -242,6 +221,58 @@ async function handleGetItems(request: Request, env: Env): Promise<Response> {
     console.error('Error in handleGetItems:', error);
     return new Response(
       JSON.stringify({ error: 'INTERNAL_ERROR', message: String(error) }), 
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+/**
+ * 处理获取排行榜 API
+ * GET /api/leaderboard?limit=10
+ */
+async function handleGetLeaderboard(request: Request, env: Env): Promise<Response> {
+  try {
+    console.log('[Leaderboard API] Request received');
+    
+    if (!env.DB) {
+      console.error('[Leaderboard API] DB binding not found');
+      return new Response(
+        JSON.stringify({ error: 'INTERNAL_ERROR', message: 'Database binding not configured' }), 
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const url = new URL(request.url);
+    const limit_str = url.searchParams.get('limit');
+    const limit = limit_str ? parseInt(limit_str, 10) : 10;
+    
+    console.log('[Leaderboard API] Limit:', limit);
+    
+    if (!Number.isInteger(limit) || limit <= 0 || limit > 100) {
+      console.error('[Leaderboard API] Invalid limit:', limit);
+      return new Response(
+        JSON.stringify({ error: 'INVALID_PARAMS', message: 'limit must be between 1 and 100' }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log('[Leaderboard API] Calling get_leaderboard...');
+    const leaderboard = await get_leaderboard(env.DB, limit);
+    console.log('[Leaderboard API] Success, entries:', leaderboard.length);
+    
+    return new Response(
+      JSON.stringify({ leaderboard }), 
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('[Leaderboard API] Error:', error);
+    console.error('[Leaderboard API] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    return new Response(
+      JSON.stringify({ 
+        error: 'INTERNAL_ERROR', 
+        message: String(error),
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }), 
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

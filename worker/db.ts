@@ -126,6 +126,7 @@ export async function get_item_with_stats(
  * - P = computeScoreFromM(M)
  *
  * 为了避免扫描过多历史数据，这里只查询最近 48 小时的窗口。
+ * 如果没有任何窗口数据，会自动初始化一个窗口。
  */
 export async function get_item_algorithm_metrics(
     db: D1Database,
@@ -137,17 +138,101 @@ export async function get_item_algorithm_metrics(
     const t = now - oneDayMs;
     const since = now - 2 * oneDayMs; // 只取最近 48 小时的窗口
 
-    const rows = await db.prepare(`
+    let rows = await db.prepare(`
         SELECT id, item_id, delta, created_at, expired_at
         FROM item_heat_record_windows
         WHERE item_id = ? AND created_at >= ?
         ORDER BY created_at ASC
     `).bind(item_id, since).all<ItemHeatRecordWindow>();
 
-    const windows = rows.results ?? [];
+    let windows = rows.results ?? [];
+
+    // 如果没有任何窗口数据，创建一个初始窗口
+    if (windows.length === 0) {
+        // 暂时注释掉写操作来调试 500 错误
+        await increment_item_window(db, item_id, 1);
+        
+        // 重新查询
+        rows = await db.prepare(`
+            SELECT id, item_id, delta, created_at, expired_at
+            FROM item_heat_record_windows
+            WHERE item_id = ? AND created_at >= ?
+            ORDER BY created_at ASC
+        `).bind(item_id, since).all<ItemHeatRecordWindow>();
+        
+        windows = rows.results ?? [];
+    }
 
     const M = computeWeightedWindowSum(t, span, windows, now);
     const P = computeScoreFromM(M);
 
     return { M, P };
+}
+
+/**
+ * 获取每周排行榜（Top Remembered）
+ * 返回 items 及其热度分数
+ */
+export async function get_leaderboard(
+    db: D1Database,
+    limit: number = 10
+): Promise<Array<{
+    rank: number;
+    item: Item;
+    pomScore: number;
+    raw: number;
+    change: 'up' | 'down' | 'same';
+}>> {
+    const now = Date.now();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const since = now - oneDayMs; // 过去 24 小时
+
+    /**
+     * SQL 逻辑：
+     * 1. 左连接 items 和 windows
+     * 2. 仅关联最近 24 小时的 windows 数据
+     * 3. 求和 delta 作为原始分数 (raw)
+     */
+    const query = `
+        SELECT 
+            i.*,
+            COALESCE(SUM(w.delta), 0) as rawScore
+        FROM items i
+        LEFT JOIN item_heat_record_windows w 
+            ON i.id = w.item_id 
+            AND w.created_at >= ?
+        GROUP BY i.id
+        ORDER BY rawScore DESC
+        LIMIT ?
+    `;
+
+    try {
+        const results = await db.prepare(query)
+            .bind(since, limit)
+            .all<Item & { rawScore: number }>();
+            
+        if (!results.results) return [];
+
+        return results.results.map((row, index) => {
+            const { rawScore, ...item } = row;
+            
+            // 在应用层计算 POM 分数
+            // 目前逻辑简单：POM = RAW
+            // 未来可以在这里添加更复杂的应用层计算逻辑，例如：
+            // const pomScore = Math.log(rawScore + 1) * 10; 
+            const pomScore = rawScore;
+
+            return {
+                rank: index + 1,
+                item: item as Item,
+                pomScore: pomScore,
+                raw: rawScore,
+                change: 'same' as const,
+            };
+        });
+
+    } catch (error) {
+        console.error('[get_leaderboard] SQL execution error:', error);
+        throw error;
+    }
 }

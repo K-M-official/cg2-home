@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "cg2-home2",
+	"name": "cg2-home",
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-11-28",
 	"assets": {
@@ -12,7 +12,14 @@
 	},
 	"observability": {
 		"enabled": true
-	}
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "cg7_gallery",
+			"database_id": "4b019dbd-64d5-4137-b5c7-ab8b14dac463"
+		}
+	],
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
