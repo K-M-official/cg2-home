@@ -1,11 +1,12 @@
 {
-	"name": "cg2-home2",
+	"name": "cg2-home",
 	"private": true,
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc -b && vite build",
+		"check": "tsc -b --noEmit",
 		"lint": "eslint .",
 		"preview": "bun run build && vite preview",
 		"deploy": "bun run build && wrangler deploy",

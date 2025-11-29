@@ -22,7 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
+tests/
 # wrangler files
 .wrangler
 .dev.vars*

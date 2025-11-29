@@ -1,163 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { MessageSquare, Share2, Heart, Gift, Flame, Flower } from 'lucide-react';
-import { FadeIn, Button, SectionTitle, Card, TextArea } from '../components/UI';
-import { RWABadge } from '../components/RWABadge';
-import { VirtualShop } from '../components/VirtualShop';
-import { MEMORIAL_TEMPLATES, MOCK_MEMORIALS } from '../constants'; // Keep MOCK for fallback/templates
-import { SHOP_ITEMS } from '../../lib/constants';
-import type { Memorial } from '../types';
+import { Candle } from '../components/Candle';
+import { Button } from '../components/UI';
+import { Hexagon, Share2, Shield, Globe, Flower2, Bone, Heart } from 'lucide-react';
 import { usePhantomWallet } from '../hooks/usePhantomWallet';
+import { VirtualShop } from '../components/VirtualShop';
+import { useGallery } from '../context/GalleryContext';
 
 const MemorialPage: React.FC = () => {
   const { id } = useParams();
   const { walletAddress, connectWallet } = usePhantomWallet();
-  const [memorial, setMemorial] = useState<Memorial | null>(null);
-  const [message, setMessage] = useState('');
+  const { currentMemorial, loadingMemorial, fetchMemorial, offerTribute } = useGallery();
+  
+  const [activeTab, setActiveTab] = useState<'timeline' | 'gallery' | 'tributes'>('gallery');
   const [isShopOpen, setIsShopOpen] = useState(false);
-  
-  // Legacy stats for backwards compatibility or summary
-  const [localStats, setLocalStats] = useState({ candles: 0, flowers: 0, tributes: 0 });
-  
-  // New detailed stats
-  const [localGongpinStats, setLocalGongpinStats] = useState<Record<string, number>>({});
-  const [localPomScore, setLocalPomScore] = useState(0);
-  const [localM, setLocalM] = useState(0);
+  const [hasLitCandle, setHasLitCandle] = useState(false);
+  const [hasGiven, setHasGiven] = useState(false);
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch item details from API
+  // Fetch Logic via Context
   useEffect(() => {
-    const fetchMemorial = async () => {
-        if (!id) return;
-        try {
-            const response = await fetch(`/api/item/stats?item_id=${id}`);
-            if (response.ok) {
-                const data = await response.json();
-                const item = data.item;
-                
-                // Parse misc data
-                let parsedMisc: any = {};
-                try {
-                    parsedMisc = item.misc ? JSON.parse(item.misc) : {};
-                } catch { parsedMisc = {}; }
-
-                // Parse gongpin stats
-                const gongpinStats = parsedMisc.gongpin || {};
-
-                const mockFallback = MOCK_MEMORIALS[0]; // Fallback for styles
-
-                const mappedMemorial: Memorial = {
-                    id: String(item.id),
-                    name: item.title,
-                    type: parsedMisc.type || 'Person',
-                    dates: parsedMisc.dates || (parsedMisc.birthDate ? `${parsedMisc.birthDate} - ${parsedMisc.deathDate || ''}` : 'Unknown'),
-                    bio: item.description ? item.description.replace(/<[^>]+>/g, '') : 'No description',
-                    coverImage: parsedMisc.image || mockFallback.coverImage,
-                    images: parsedMisc.images || [],
-                    templateId: parsedMisc.templateId || 'ethereal-garden',
-                    timeline: parsedMisc.timeline || [],
-                    stats: { 
-                        candles: Math.floor(data.stats['1hour'] / 1), // Approximation from delta
-                        flowers: 0, 
-                        tributes: 0, 
-                        shares: 0 
-                    },
-                    messages: parsedMisc.messages || [],
-                    badgeId: `RWA-${item.id}`,
-                    pomScore: data.algorithm?.P || 0,
-                    gongpinStats: gongpinStats,
-                    onChainHash: parsedMisc.onChainHash
-                };
-                
-                setMemorial(mappedMemorial);
-                setLocalStats(mappedMemorial.stats);
-                setLocalGongpinStats(gongpinStats);
-                setLocalPomScore(mappedMemorial.pomScore || 0);
-                setLocalM(data.algorithm?.M || 0);
-            } else {
-                console.error("Failed to fetch memorial details");
-                // Fallback to mock if API fails (for development/demo)
-                const found = MOCK_MEMORIALS.find(m => m.id === id);
-                if (found) {
-                    setMemorial(found);
-                    setLocalStats(found.stats);
-                    setLocalGongpinStats({});
-                    setLocalPomScore(found.pomScore || 0);
-                    setLocalM(0);
-                } else {
-                    setError("Memorial not found");
-                }
-            }
-        } catch (error: any) {
-            console.error("Error fetching memorial:", error);
-            setError(error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    fetchMemorial();
-    window.scrollTo(0,0);
+    if (id) {
+        fetchMemorial(id);
+    }
+    window.scrollTo(0, 0);
   }, [id]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (error || !memorial) return <div className="min-h-screen flex items-center justify-center">Error: {error || "Memorial not found"}</div>;
-
-  const template = MEMORIAL_TEMPLATES.find(t => t.id === memorial.templateId) || MEMORIAL_TEMPLATES[1];
+  // Interaction Handlers
+  const handleLightCandle = async () => {
+      if (hasLitCandle) return;
+      // Simulate API call for lighting candle (could also be moved to context if needed)
+      setHasLitCandle(true);
+  };
 
   const handlePurchase = async (item: any) => {
       if (!walletAddress) {
-          try {
-              await connectWallet();
-          } catch (error) {
-              console.error("Wallet connection failed:", error);
-          }
+          try { await connectWallet(); } catch (e) { console.error(e); }
           return;
       }
 
-      // Call API to increment heat with tribute_id
-      try {
-          const response = await fetch('/api/item/increment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                  item_id: parseInt(memorial.id), 
-                  tribute_id: item.id 
-              })
-          });
-          
-          const data = await response.json();
-          
-          if (data.success) {
-              if (typeof data.P === 'number') setLocalPomScore(data.P);
-              if (typeof data.M === 'number') setLocalM(data.M);
+      if (id && currentMemorial) {
+          const result = await offerTribute(id, item.id);
+          if (result.success) {
+              setHasGiven(true);
           }
-          
-          console.log(`Tribute offered: ${item.id}`);
-      } catch (err) {
-          console.error('Failed to offer tribute:', err);
       }
-
-      // Optimistic update for counts
-      setLocalGongpinStats(prev => ({
-          ...prev,
-          [item.id]: (prev[item.id] || 0) + 1
-      }));
-      
-      // Legacy update (optional)
-      setLocalStats(prev => {
-          if (item.type === 'candle') return { ...prev, candles: prev.candles + 1 };
-          if (item.type === 'flower') return { ...prev, flowers: prev.flowers + 1 };
-          return { ...prev, tributes: prev.tributes + 1 };
-      });
       setIsShopOpen(false);
   };
 
+  // Derived State
+  const memorial = currentMemorial;
+  const isPet = memorial?.type?.toLowerCase() === 'pet';
+  const isPublicRanked = (memorial?.pomScore || 0) > 100; 
+  
+  // Calculate totals from context data
+  const flowerCount = memorial?.gongpinStats 
+      ? Object.values(memorial.gongpinStats).reduce((a, b) => a + b, 0) 
+      : 0;
+
+  if (loadingMemorial) return <div className="min-h-screen flex items-center justify-center bg-slate-50">Loading...</div>;
+  if (!memorial) return <div className="min-h-screen flex items-center justify-center bg-slate-50">Memorial not found</div>;
+
   return (
-    <div className={`min-h-screen ${template.previewColor} transition-colors duration-1000`}>
+    <div className="min-h-screen bg-white font-sans text-slate-900">
       <VirtualShop 
         isOpen={isShopOpen} 
         onClose={() => setIsShopOpen(false)} 
@@ -166,173 +70,188 @@ const MemorialPage: React.FC = () => {
         walletAddress={walletAddress}
         connectWallet={connectWallet}
       />
-      
-      {/* Dynamic Header based on Template */}
-      <div className="relative h-[65vh] w-full overflow-hidden">
-         <motion.div 
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 10 }}
-            className="absolute inset-0"
-         >
-             <div className="absolute inset-0 bg-black/30 z-10" />
-             <img src={template.bgImage} className="w-full h-full object-cover" alt="Atmosphere" />
-         </motion.div>
 
-         {/* Cover Image Floating */}
-         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pt-20">
-             <FadeIn>
-                <div className="w-40 h-40 md:w-56 md:h-56 rounded-full border-4 border-white/20 shadow-2xl overflow-hidden mb-8 mx-auto">
-                    <img src={memorial.coverImage} className="w-full h-full object-cover" alt={memorial.name} />
-                </div>
-                <h1 className="text-center font-serif text-5xl md:text-7xl text-white mb-2 drop-shadow-lg">{memorial.name}</h1>
-                <p className="text-center text-xl text-white/80 font-light tracking-[0.2em] uppercase">{memorial.dates}</p>
-             </FadeIn>
-         </div>
+      {/* Immersive Header */}
+      <div className="relative h-[60vh] md:h-[70vh] w-full overflow-hidden bg-slate-900">
+        <div className="absolute inset-0 bg-slate-900/30 z-10"></div>
+        <img src={memorial.coverImage} alt="Cover" className="w-full h-full object-cover animate-fade-in scale-105 transform origin-center opacity-90" style={{ animationDuration: '3s' }} />
+        
+        <div className="absolute inset-0 z-20 bg-gradient-to-t from-white via-transparent to-transparent"></div>
+        
+        <div className="absolute bottom-0 left-0 right-0 p-8 md:p-16 z-30 text-center">
+          <div className="animate-fade-in" style={{ animationDelay: '0.5s' }}>
+            
+            {/* Token Badge */}
+            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full backdrop-blur-md border mb-6 ${
+              isPublicRanked 
+                ? 'bg-amber-100/80 border-amber-200 text-amber-900' 
+                : 'bg-white/30 border-white/40 text-slate-900'
+            }`}>
+              {isPublicRanked ? <Globe className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
+              <span className="text-xs uppercase tracking-widest font-semibold">
+                {isPublicRanked ? `Ranked • Gold Heritage Token` : 'Private Heritage Token'}
+              </span>
+            </div>
+            
+            <h1 className="text-5xl md:text-8xl font-serif text-slate-900 mb-4">{memorial.name}</h1>
+            <p className="text-xl font-light text-slate-600 font-serif italic">{memorial.dates}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Interaction Bar - POM Drivers */}
-      <div className="max-w-7xl mx-auto px-6 -mt-8 relative z-30">
-          <Card className="flex flex-wrap justify-between items-center gap-4 bg-white/90 backdrop-blur-md shadow-xl border-white/50 max-w-5xl mx-auto">
-             <div className="flex gap-6 md:gap-8 mx-auto md:mx-0 flex-wrap justify-center">
-                 {/* POM Score */}
-                 <div className="text-center min-w-[60px]">
-                     <div className="flex items-center gap-1 text-slate-800 justify-center">
-                         <span className="font-bold text-lg font-mono">{Math.floor(localPomScore)}</span>
-                     </div>
-                     <span className="text-[10px] uppercase tracking-widest text-slate-400">POM</span>
-                 </div>
-
-                 {/* Delta / Heat */}
-                 <div className="text-center min-w-[60px]">
-                     <div className="flex items-center gap-1 text-slate-800 justify-center">
-                         <span className="font-bold text-lg font-mono">{localM.toFixed(2)}</span>
-                     </div>
-                     <span className="text-[10px] uppercase tracking-widest text-slate-400">DELTA</span>
-                 </div>
-
-                 {/* Dynamic Tributes */}
-                 {SHOP_ITEMS.map(shopItem => {
-                     const count = localGongpinStats[shopItem.id] || 0;
-                     if (count === 0) return null;
-                     
-                     return (
-                        <div key={shopItem.id} className="text-center min-w-[60px]">
-                            <div className="flex items-center gap-1 text-slate-700 justify-center">
-                                <span className="text-xl">{shopItem.icon}</span>
-                                <span className="font-bold text-lg">{count}</span>
-                            </div>
-                            <span className="text-[10px] uppercase tracking-widest text-slate-400">{shopItem.name}</span>
-                        </div>
-                     );
-                 })}
+      {/* Ritual Section */}
+      <div className="max-w-5xl mx-auto px-6 -mt-16 relative z-40 mb-16">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl shadow-slate-100/50 border border-white flex flex-col md:flex-row items-center justify-between gap-8">
+           <div className="md:w-1/2 text-center md:text-left">
+             <div className="flex justify-center md:justify-between items-baseline mb-2">
+               <h3 className="text-lg font-serif text-slate-800">Biography</h3>
+               {memorial.onChainHash && (
+                 <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-1 rounded font-mono hidden md:inline-block">On-Chain</span>
+               )}
              </div>
+             <p className="text-slate-600 font-light leading-relaxed mb-4 line-clamp-4">
+               {memorial.bio}
+             </p>
+             <div className="flex gap-4 justify-center md:justify-start text-xs text-slate-400 uppercase tracking-widest">
+                {/* Using Context Data Directly */}
+                <span>POM Score: {Math.floor(memorial.pomScore || 0)}</span>
+                <span>Delta: {memorial.delta?.toFixed(2)}</span>
+             </div>
+           </div>
+           
+           {/* Interactive Elements */}
+           <div className="md:w-1/2 flex flex-wrap items-center justify-center md:justify-end gap-6 border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-8">
              
-             <Button 
-                onClick={() => setIsShopOpen(true)}
-                className="w-full md:w-auto bg-slate-900 text-white shadow-lg hover:bg-slate-800"
-             >
-                 <Heart size={16} className="text-red-400" fill="currentColor" />
-                 Offer Tribute
-             </Button>
-          </Card>
+             {/* Candle */}
+             <Candle initialCount={memorial.stats.candles} onLight={handleLightCandle} />
+             
+             {/* Category Specific Interaction */}
+             <div className="flex flex-col items-center gap-2">
+                <button 
+                  onClick={() => setIsShopOpen(true)}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${
+                    hasGiven 
+                      ? 'bg-emerald-100 text-emerald-600 scale-110 shadow-inner' 
+                      : 'bg-slate-50 border border-slate-200 text-slate-400 hover:bg-pink-50 hover:text-pink-500 hover:border-pink-200'
+                  }`}
+                >
+                   {isPet ? <Bone className="w-5 h-5" /> : <Flower2 className="w-5 h-5" />}
+                </button>
+                <span className="text-xs font-sans text-slate-400 tracking-wider">
+                  {hasGiven ? 'Thanks for offering! ' : ''}
+                  {flowerCount} {isPet ? 'Treats' : 'Flowers'}
+                </span>
+             </div>
+
+             <div className="h-10 w-px bg-slate-200 hidden md:block"></div>
+
+             <div className="flex flex-col gap-2 w-full md:w-auto">
+               <Button 
+                 variant="primary" 
+                 className="text-xs py-2 px-4 w-full bg-slate-900 text-white hover:bg-slate-800"
+                 onClick={() => setIsShopOpen(true)}
+               >
+                 <Heart className="w-3 h-3 mr-2" /> Leave Tribute
+               </Button>
+               <Button variant="secondary" className="text-xs py-2 px-4 w-full">
+                 <Share2 className="w-3 h-3 mr-2" /> Share Space
+               </Button>
+             </div>
+           </div>
+        </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 mt-12 pb-24">
-         
-         {/* Bio */}
-         <FadeIn delay={0.2}>
-            <div className="text-center py-8 mb-16">
-                <span className="inline-block w-8 h-1 bg-slate-300 mb-6 rounded-full"></span>
-                <p className="font-serif text-2xl md:text-3xl leading-relaxed text-slate-700 italic max-w-4xl mx-auto">
-                    "{memorial.bio}"
-                </p>
-                {memorial.onChainHash && (
-                    <div className="mt-6 flex justify-center">
-                         <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                             Immutable Storage: {memorial.onChainHash}
-                         </span>
-                    </div>
-                )}
-            </div>
-         </FadeIn>
+      {/* Navigation Tabs */}
+      <div className="flex justify-center mb-12 border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur-sm z-50 pt-4">
+        {['gallery', 'timeline', 'tributes'].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab as any)}
+            className={`px-8 py-4 text-sm uppercase tracking-widest transition-all relative ${
+              activeTab === tab ? 'text-slate-900 font-medium' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            {tab}
+            {activeTab === tab && (
+              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-900"></div>
+            )}
+          </button>
+        ))}
+      </div>
 
-         {/* Memory Waterfall */}
-         <div className="mb-24">
-            <SectionTitle title="Memory Lane" />
-            <div className="columns-1 md:columns-2 gap-6 space-y-6">
-                {memorial.images.map((img, i) => (
-                    <FadeIn key={i} delay={i * 0.1}>
-                        <img src={img} className="w-full rounded-xl shadow-md hover:shadow-xl transition-shadow duration-500 border border-white/50" alt="Memory" />
-                    </FadeIn>
-                ))}
-                
-                {/* Embedded Timeline */}
-                <FadeIn delay={0.4}>
-                     <div className="bg-white/60 p-8 rounded-xl break-inside-avoid border border-white/50">
-                        <h3 className="font-serif text-2xl mb-6">Timeline</h3>
-                        <div className="space-y-8 border-l border-slate-300 ml-2 pl-6">
-                            {memorial.timeline.map((event) => (
-                                <div key={event.id} className="relative">
-                                    <div className="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-slate-400 ring-4 ring-white"></div>
-                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{event.year}</span>
-                                    <h4 className="font-serif text-lg text-slate-800">{event.title}</h4>
-                                    <p className="text-sm text-slate-600 font-light mt-1">{event.description}</p>
-                                </div>
-                            ))}
-                        </div>
-                     </div>
-                </FadeIn>
-            </div>
-         </div>
+      {/* Content Area - Masonry Layout */}
+      <div className="max-w-7xl mx-auto px-6 pb-32 min-h-[500px]">
+        {activeTab === 'gallery' && (
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8 animate-fade-in">
+            {memorial.images.map((img, i) => (
+              <div key={i} className="break-inside-avoid relative group rounded-xl overflow-hidden cursor-pointer">
+                <img src={img} alt="Memory" className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500"></div>
+              </div>
+            ))}
+            {memorial.images.length === 0 && (
+                <div className="text-center py-20 text-slate-400 italic w-full col-span-full">
+                    No images uploaded yet.
+                </div>
+            )}
+          </div>
+        )}
 
-         {/* Community Wall */}
-         <div className="mb-24 grid md:grid-cols-2 gap-12">
-             <FadeIn>
-                 <div className="sticky top-24">
-                    <h3 className="font-serif text-3xl mb-4">Guest Book</h3>
-                    <p className="text-slate-500 mb-6 font-light">Leave a public comment or a private whisper. Your words help keep the memory alive.</p>
-                    <TextArea 
-                        label="Your Message" 
-                        value={message} 
-                        onChange={e => setMessage(e.target.value)} 
-                        placeholder="Share a memory..." 
-                        className="bg-white"
-                    />
-                    <Button icon={MessageSquare} className="w-full justify-center">Post Message</Button>
-                    <p className="text-[10px] text-slate-400 mt-4 text-center">
-                        Messages are weighted in the POM algorithm.
-                    </p>
+        {activeTab === 'timeline' && (
+           <div className="max-w-2xl mx-auto space-y-12 animate-fade-in">
+             {memorial.timeline && memorial.timeline.length > 0 ? memorial.timeline.map((event) => (
+               <div key={event.id} className="flex gap-8 group">
+                 <div className="w-24 text-right pt-2 font-serif text-2xl text-slate-300 group-hover:text-slate-800 transition-colors">
+                   {event.year}
                  </div>
-             </FadeIn>
-             <div className="space-y-4">
-                 <h4 className="uppercase text-xs tracking-widest text-slate-400 mb-4">Recent Tributes</h4>
-                 {memorial.messages.length === 0 && <p className="text-slate-400 italic text-sm">Be the first to leave a message.</p>}
-                 {memorial.messages.map((msg, i) => (
-                     <FadeIn key={msg.id} delay={i * 0.2}>
-                         <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100">
-                             <p className="text-slate-600 font-serif italic mb-4">"{msg.content}"</p>
-                             <div className="text-xs text-slate-400 uppercase tracking-widest flex justify-between">
-                                 <span>{msg.author}</span>
-                                 <span>{msg.date}</span>
-                             </div>
-                         </div>
-                     </FadeIn>
-                 ))}
+                 <div className="flex-1 border-l border-slate-200 pl-8 pb-12 relative">
+                   <div className="absolute -left-[5px] top-4 w-2.5 h-2.5 rounded-full bg-slate-200 group-hover:bg-indigo-300 transition-colors"></div>
+                   <div className="bg-slate-50 p-6 rounded-xl group-hover:shadow-md transition-shadow duration-500">
+                     <h4 className="font-medium text-slate-800 mb-2">{event.title}</h4>
+                     <p className="text-slate-500 font-light text-sm">
+                       {event.description}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+             )) : (
+                <div className="text-center py-20 text-slate-400 italic">
+                    No timeline events recorded.
+                </div>
+             )}
+           </div>
+        )}
+        
+        {activeTab === 'tributes' && (
+          <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+             {/* Message Input Mock */}
+             <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 mb-8">
+                <textarea 
+                    className="w-full bg-white p-4 rounded-lg border border-slate-200 text-sm mb-4 focus:outline-none focus:ring-1 focus:ring-slate-300"
+                    placeholder="Leave a message..."
+                    rows={3}
+                />
+                <div className="flex justify-end">
+                    <Button variant="primary" className="text-xs bg-slate-900 text-white">Post Message</Button>
+                </div>
              </div>
-         </div>
 
-         {/* RWA Badge Section */}
-         <FadeIn className="text-center py-12 border-t border-slate-200/50">
-             <SectionTitle title="Eternal Proof" />
-             <div className="flex justify-center mb-8">
-                 <RWABadge id={memorial.badgeId} name={memorial.name} />
-             </div>
-             <div className="flex justify-center gap-4">
-                 <Button variant="secondary" icon={Share2}>Share Memorial</Button>
-             </div>
-         </FadeIn>
-
+             {memorial.messages.map((msg, i) => (
+                 <div key={msg.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                     <p className="text-slate-600 font-serif italic mb-4">"{msg.content}"</p>
+                     <div className="text-xs text-slate-400 uppercase tracking-widest flex justify-between">
+                         <span>{msg.author}</span>
+                         <span>{msg.date}</span>
+                     </div>
+                 </div>
+             ))}
+             {memorial.messages.length === 0 && (
+                <div className="text-center py-10 text-slate-400 italic">
+                    Be the first to leave a tribute.
+                </div>
+             )}
+          </div>
+        )}
       </div>
     </div>
   );

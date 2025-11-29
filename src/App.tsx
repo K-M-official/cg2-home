@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './Layout';
 import HomePage from './pages/HomePage';
@@ -9,26 +9,37 @@ import HeritagePage from './pages/HeritagePage';
 import AboutPage from './pages/AboutPage';
 import { PrivacyContent, TermsContent } from './components/LegalContent';
 import { GalleryProvider } from './context/GalleryContext';
+import { ParticleIntro } from './components/ParticleIntro';
 
 const App: React.FC = () => {
+  const [introComplete, setIntroComplete] = useState(false);
+
   return (
-    <GalleryProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<HomePage />} />
-            <Route path="create" element={<CreatePage />} />
-            <Route path="memorial/:id" element={<MemorialPage />} />
-            <Route path="gallery" element={<GalleryPage />} />
-            <Route path="heritage" element={<HeritagePage />} />
-            <Route path="about" element={<AboutPage />}>
-               <Route path="privacy" element={<PrivacyContent />} />
-               <Route path="terms" element={<TermsContent />} />
-            </Route>
-          </Route>
-        </Routes>
-      </Router>
-    </GalleryProvider>
+    <>
+      {!introComplete && (
+        <ParticleIntro onEnter={() => setIntroComplete(true)} />
+      )}
+      
+      {introComplete && (
+        <GalleryProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<HomePage />} />
+                <Route path="create" element={<CreatePage />} />
+                <Route path="memorial/:id" element={<MemorialPage />} />
+                <Route path="gallery" element={<GalleryPage />} />
+                <Route path="heritage" element={<HeritagePage />} />
+                <Route path="about" element={<AboutPage />}>
+                   <Route path="privacy" element={<PrivacyContent />} />
+                   <Route path="terms" element={<TermsContent />} />
+                </Route>
+              </Route>
+            </Routes>
+          </Router>
+        </GalleryProvider>
+      )}
+    </>
   );
 };
 

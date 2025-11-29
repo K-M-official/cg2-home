@@ -7,6 +7,15 @@ export enum MemorialType {
   EVENT = 'Event',
 }
 
+export enum CreateStep {
+  BASIC_INFO = 0,
+  STYLE = 1,
+  CONTENT = 2,
+  BADGE = 3,
+}
+
+export type MemorialCategory = 'Family' | 'Hero' | 'Pet' | 'Friend';
+
 export type TemplateId = 'ethereal-garden' | 'cosmic-voyage' | 'serene-sanctuary';
 
 export interface InteractionStats {

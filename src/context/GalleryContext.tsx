@@ -32,6 +32,12 @@ interface GalleryContextType {
   loadingGroups: boolean;
   loadingItems: boolean;
   error: string | null;
+
+  // Detail Page Logic
+  currentMemorial: Memorial | null;
+  loadingMemorial: boolean;
+  fetchMemorial: (id: string) => Promise<void>;
+  offerTribute: (memorialId: string, tributeId: string) => Promise<{success: boolean, error?: string}>;
 }
 
 const GalleryContext = createContext<GalleryContextType | undefined>(undefined);
@@ -44,26 +50,27 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [loadingItems, setLoadingItems] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-        // 缓存 items: groupId -> Memorial[]
+  // Detail Page State
+  const [currentMemorial, setCurrentMemorial] = useState<Memorial | null>(null);
+  const [loadingMemorial, setLoadingMemorial] = useState(false);
+
+  // 缓存 items: groupId -> Memorial[]
   const [itemsCache, setItemsCache] = useState<Record<string, Memorial[]>>({});
 
-  // 清除缓存函数，当组件卸载或重新进入时清除缓存
   useEffect(() => {
       return () => {
           setItemsCache({});
       };
   }, []);
 
-  // 1. Fetch Groups (只执行一次)
+  // 1. Fetch Groups
   useEffect(() => {
     const fetchGroups = async () => {
       setLoadingGroups(true);
-      console.log('Fetching groups...');
       try {
         const response = await fetch('/api/groups');
         if (!response.ok) throw new Error('Failed to fetch groups');
         const data = await response.json();
-        console.log('Groups data received:', data);
         setGroups(data.groups || []);
       } catch (err: any) {
         console.error('Fetch groups error:', err);
@@ -76,18 +83,11 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
     fetchGroups();
   }, []);
 
-  // 2. Fetch Items 当 activeGroupId 改变时
+  // 2. Fetch Items
   useEffect(() => {
     let isMounted = true;
 
     const fetchItems = async () => {
-      // 暂时禁用缓存以保证数据实时性
-      // const cacheKey = String(activeGroupId);
-      // if (itemsCache[cacheKey]) {
-      //   setItems(itemsCache[cacheKey]);
-      //   return;
-      // }
-
       setLoadingItems(true);
       setError(null);
 
@@ -95,13 +95,12 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
         let fetchedItems: ApiItem[] = [];
 
         if (activeGroupId === 'All') {
-            // 临时：获取 group 1 和 2 的数据合并，模拟 "All"
             const [res1, res2] = await Promise.all([
                 fetch('/api/items?group_id=1', { cache: 'no-store' }),
                 fetch('/api/items?group_id=2', { cache: 'no-store' })
             ]);
             
-            if (!isMounted) return; // Check after async
+            if (!isMounted) return;
 
             const d1 = res1.ok ? await res1.json() : { items: [] };
             const d2 = res2.ok ? await res2.json() : { items: [] };
@@ -109,7 +108,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
             fetchedItems = [...d1.items, ...d2.items];
         } else {
             const response = await fetch(`/api/items?group_id=${activeGroupId}`, { cache: 'no-store' });
-            if (!isMounted) return; // Check after async
+            if (!isMounted) return;
             
             if (!response.ok) throw new Error('Failed to fetch items');
             const data = await response.json();
@@ -124,8 +123,6 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
             } catch { parsedMisc = {}; }
 
             const mockFallback = MOCK_MEMORIALS[0];
-
-            // Calculate stats from misc.gongpin
             const gongpinStats = parsedMisc.gongpin || {};
             const stats = { candles: 0, flowers: 0, tributes: 0, shares: 0 };
 
@@ -156,12 +153,8 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
             };
         });
 
-        if (!isMounted) return; // Check before setting state
-
+        if (!isMounted) return;
         setItems(mappedItems);
-        
-        // 更新缓存
-        // setItemsCache(prev => ({ ...prev, [cacheKey]: mappedItems }));
 
       } catch (err: any) {
         if (!isMounted) return;
@@ -169,18 +162,113 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
         setError(err.message);
         setItems([]);
       } finally {
-        if (isMounted) {
-            setLoadingItems(false);
-        }
+        if (isMounted) setLoadingItems(false);
       }
     };
 
     fetchItems();
-    
-    return () => {
-        isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [activeGroupId]);
+
+  // 3. Fetch Single Memorial Detail
+  const fetchMemorial = async (id: string) => {
+      setLoadingMemorial(true);
+      try {
+          const response = await fetch(`/api/item/stats?item_id=${id}`);
+          if (response.ok) {
+              const data = await response.json();
+              const item = data.item;
+              
+              let parsedMisc: any = {};
+              try { parsedMisc = item.misc ? JSON.parse(item.misc) : {}; } catch { parsedMisc = {}; }
+
+              const gongpinStats = parsedMisc.gongpin || {};
+              const mockFallback = MOCK_MEMORIALS[0];
+
+              // Re-calculate stats for detail view
+              const stats = { candles: Math.floor(data.stats['1hour'] / 1), flowers: 0, tributes: 0, shares: 0 };
+              // Note: 'candles' here is just a placeholder from original code, ideally should sum up from gongpinStats like in list view
+
+              const mappedMemorial: Memorial = {
+                  id: String(item.id),
+                  name: item.title,
+                  type: parsedMisc.type || 'Person',
+                  dates: parsedMisc.dates || (parsedMisc.birthDate ? `${parsedMisc.birthDate} - ${parsedMisc.deathDate || ''}` : 'Unknown'),
+                  bio: item.description ? item.description.replace(/<[^>]+>/g, '') : 'No description',
+                  coverImage: parsedMisc.image || mockFallback.coverImage,
+                  images: parsedMisc.images || [],
+                  templateId: parsedMisc.templateId || 'ethereal-garden',
+                  timeline: parsedMisc.timeline || [],
+                  stats: stats, 
+                  messages: parsedMisc.messages || [],
+                  badgeId: `RWA-${item.id}`,
+                  pomScore: data.algorithm?.P || 0,
+                  delta: data.algorithm?.M || 0,
+                  gongpinStats: gongpinStats,
+                  onChainHash: parsedMisc.onChainHash
+              };
+              
+              setCurrentMemorial(mappedMemorial);
+          } else {
+              // Fallback
+              const found = MOCK_MEMORIALS.find(m => m.id === id);
+              if (found) setCurrentMemorial(found);
+              else throw new Error("Memorial not found");
+          }
+      } catch (error: any) {
+          console.error("Fetch memorial error:", error);
+          // Don't set global error to avoid breaking list view, just log
+      } finally {
+          setLoadingMemorial(false);
+      }
+  };
+
+  // 4. Offer Tribute Action
+  const offerTribute = async (memorialId: string, tributeId: string) => {
+      try {
+          const response = await fetch('/api/item/increment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ item_id: parseInt(memorialId), tribute_id: tributeId })
+          });
+          
+          const data = await response.json();
+          if (data.success) {
+              // Update Current Memorial State
+              setCurrentMemorial(prev => {
+                  if (!prev || prev.id !== memorialId) return prev;
+                  
+                  const newGongpinStats = { ...prev.gongpinStats };
+                  newGongpinStats[tributeId] = (newGongpinStats[tributeId] || 0) + 1;
+
+                  return {
+                      ...prev,
+                      pomScore: (typeof data.P === 'number') ? data.P : prev.pomScore,
+                      delta: (typeof data.M === 'number') ? data.M : prev.delta,
+                      gongpinStats: newGongpinStats
+                  };
+              });
+
+              // Optimistically update items list if present
+              setItems(prevItems => prevItems.map(item => {
+                  if (item.id === memorialId) {
+                      return {
+                          ...item,
+                          pomScore: (typeof data.P === 'number') ? data.P : item.pomScore,
+                          delta: (typeof data.M === 'number') ? data.M : item.delta
+                      };
+                  }
+                  return item;
+              }));
+
+              return { success: true };
+          }
+          return { success: false, error: 'API returned fail' };
+      } catch (err: any) {
+          console.error('Offer tribute error:', err);
+          return { success: false, error: err.message };
+      }
+  };
 
   return (
     <GalleryContext.Provider value={{ 
@@ -190,7 +278,11 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
       setActiveGroupId, 
       loadingGroups, 
       loadingItems,
-      error 
+      error,
+      currentMemorial,
+      loadingMemorial,
+      fetchMemorial,
+      offerTribute
     }}>
       {children}
     </GalleryContext.Provider>
@@ -204,4 +296,3 @@ export const useGallery = () => {
   }
   return context;
 };
-

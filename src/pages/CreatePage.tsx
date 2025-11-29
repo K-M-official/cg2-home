@@ -1,220 +1,233 @@
 import React, { useState } from 'react';
+import { CreateStep } from '../types';
+import { Button } from '../components/UI';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Upload, ArrowRight, ArrowLeft, Check, Lock, Database } from 'lucide-react';
-import { FadeIn, Button, Input, TextArea, SectionTitle, Card } from '../components/UI';
-import { MEMORIAL_TEMPLATES } from '../constants';
-// import { generateMemorialBio } from '../services/geminiService';
-import { RWABadge } from '../components/RWABadge';
+import { Sparkles, Upload, ChevronRight, ChevronLeft, Hexagon, Cloud, Lock } from 'lucide-react';
 
-const steps = [
-  { id: 1, title: "Identity", desc: "Who are we remembering?" },
-  { id: 2, title: "Sanctuary", desc: "Choose a DIY Template." },
-  { id: 3, title: "Essence", desc: "Add bio and memories." },
-  { id: 4, title: "Consecration", desc: "Generate eternal badge." },
-];
-
-const CreatePage: React.FC = () => {
+export const CreatePage: React.FC = () => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [loadingAI, setLoadingAI] = useState(false);
+  const [step, setStep] = useState<CreateStep>(CreateStep.BASIC_INFO);
+  const [loading, setLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Form State
   const [formData, setFormData] = useState({
     name: '',
     dates: '',
-    type: 'Person',
-    templateId: 'cosmic-voyage',
-    bio: '',
-    traits: '',
-    memories: ''
+    relationship: 'Family',
+    keywords: '',
+    description: '',
+    theme: 'modern',
+    type: 'private' // Default to Cloud Memorial
   });
 
   const handleNext = () => {
-    if (currentStep < 4) setCurrentStep(c => c + 1);
-    else navigate('/memorial/1'); // Mock redirect to newly created page
-  };
-  
-  const handleBack = () => {
-    if (currentStep > 1) setCurrentStep(c => c - 1);
+    if (step < CreateStep.BADGE) {
+      setStep(prev => prev + 1);
+    } else {
+      // Finalize
+      setLoading(true);
+      setTimeout(() => navigate('/memorial/1'), 1500); // Mock redirect
+    }
   };
 
-  const handleGenerateBio = async () => {
-    if (!formData.name || !formData.traits) return;
-    setLoadingAI(true);
-    const generated = 'test'; // await generateMemorialBio(formData.name, formData.traits, formData.memories);
-    setFormData(prev => ({ ...prev, bio: generated }));
-    setLoadingAI(false);
+  const handleBack = () => setStep(prev => prev - 1);
+
+  const renderStepContent = () => {
+    switch(step) {
+      case CreateStep.BASIC_INFO:
+        return (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 rounded-lg text-blue-800 text-sm">
+               <Cloud className="w-4 h-4" />
+               <span className="font-medium">Creating a Private Cloud Memorial</span>
+            </div>
+            <h2 className="text-2xl font-serif text-slate-800">Who are we remembering?</h2>
+            <div className="grid grid-cols-1 gap-4">
+              <label className="block">
+                <span className="text-slate-500 text-sm mb-1 block">Full Name</span>
+                <input 
+                  type="text" 
+                  className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all font-serif text-lg text-slate-900"
+                  placeholder="e.g. Eleanor Rigby"
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
+                />
+              </label>
+              <label className="block">
+                <span className="text-slate-500 text-sm mb-1 block">Dates (Birth - Passing)</span>
+                <input 
+                  type="text" 
+                  className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all text-slate-900"
+                  placeholder="e.g. 1950 - 2023"
+                  value={formData.dates}
+                  onChange={e => setFormData({...formData, dates: e.target.value})}
+                />
+              </label>
+              <label className="block">
+                <span className="text-slate-500 text-sm mb-1 block">Relationship Category</span>
+                <select 
+                  className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all text-slate-900"
+                  value={formData.relationship}
+                  onChange={e => setFormData({...formData, relationship: e.target.value})}
+                >
+                  <option value="Family">Family Member</option>
+                  <option value="Pet">Pet</option>
+                  <option value="Friend">Friend</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        );
+      case CreateStep.STYLE:
+        return (
+          <div className="space-y-6 animate-fade-in">
+             <h2 className="text-2xl font-serif text-slate-800">Choose a Sanctuary Style</h2>
+             <div className="grid grid-cols-2 gap-4">
+               {['Classic Warmth', 'Cosmic Eternity', 'Nature Peace', 'Modern Minimal'].map((style) => (
+                 <button 
+                  key={style}
+                  onClick={() => setFormData({...formData, theme: style.toLowerCase()})}
+                  className={`p-4 rounded-xl border text-left transition-all ${
+                    formData.theme === style.toLowerCase() 
+                    ? 'border-indigo-300 bg-indigo-50 shadow-md ring-1 ring-indigo-200' 
+                    : 'border-slate-100 hover:border-slate-300 bg-white'
+                  }`}
+                 >
+                   <div className={`w-8 h-8 rounded-full mb-3 ${
+                     style.includes('Cosmic') ? 'bg-slate-900' : 
+                     style.includes('Nature') ? 'bg-emerald-100' : 'bg-orange-50'
+                   }`}></div>
+                   <span className="font-serif text-slate-700">{style}</span>
+                 </button>
+               ))}
+             </div>
+          </div>
+        );
+      case CreateStep.CONTENT:
+        return (
+          <div className="space-y-6 animate-fade-in">
+             <h2 className="text-2xl font-serif text-slate-800">Tell their story</h2>
+             
+             <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <Sparkles className="w-24 h-24 text-indigo-500" />
+                </div>
+                
+                <label className="block mb-4">
+                  <span className="text-slate-500 text-sm mb-1 block">Describe them in a few keywords</span>
+                  <input 
+                    type="text" 
+                    className="w-full px-4 py-2 rounded-lg bg-white border border-slate-200 focus:outline-none text-slate-900"
+                    placeholder="e.g. gentle, lover of jazz, kind grandmother"
+                    value={formData.keywords}
+                    onChange={e => setFormData({...formData, keywords: e.target.value})}
+                  />
+                </label>
+                
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-slate-500 text-sm">Biography</span>
+                </div>
+                <textarea 
+                  className="w-full px-4 py-3 rounded-lg bg-white border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all min-h-[120px] font-light leading-relaxed resize-none text-slate-900"
+                  placeholder="Their story will appear here..."
+                  value={formData.description}
+                  onChange={e => setFormData({...formData, description: e.target.value})}
+                ></textarea>
+             </div>
+
+             <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:bg-slate-50 transition-colors cursor-pointer group">
+               <Upload className="w-8 h-8 mx-auto text-slate-300 group-hover:text-slate-500 mb-2 transition-colors" />
+               <p className="text-sm text-slate-500">Upload Cover Photo</p>
+               <input type="file" className="hidden" />
+             </div>
+          </div>
+        );
+      case CreateStep.BADGE:
+        return (
+          <div className="space-y-8 animate-fade-in text-center pt-8">
+             <div className="relative inline-block">
+               <div className="absolute inset-0 bg-indigo-200 blur-2xl opacity-40 rounded-full animate-pulse-slow"></div>
+               <Hexagon className="w-32 h-32 text-slate-800 mx-auto relative z-10 stroke-1 fill-white/50 backdrop-blur-md" />
+               <div className="absolute inset-0 flex items-center justify-center z-20 flex-col">
+                 <Lock className="w-6 h-6 text-slate-600 mb-1" />
+                 <span className="text-sm font-serif text-slate-800">Private Token</span>
+               </div>
+             </div>
+             
+             <div>
+               <h2 className="text-2xl font-serif text-slate-800 mb-2">Minting Digital Heritage Token</h2>
+               <p className="text-slate-500 max-w-xs mx-auto text-sm">
+                 A permanent, encrypted proof of this Cloud Memorial on the K&M ERA network.
+               </p>
+             </div>
+
+             <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-lg text-xs text-emerald-800 inline-block">
+               Status: <span className="font-mono">Ready to mint for {formData.name || 'Soul'}</span>
+             </div>
+          </div>
+        );
+      default: return null;
+    }
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-6 bg-slate-50">
-      <div className="max-w-4xl mx-auto">
-        
-        {/* Progress Bar */}
-        <div className="flex justify-between items-center mb-16 relative">
-            <div className="absolute top-1/2 left-0 w-full h-px bg-slate-200 -z-10"></div>
-            {steps.map((step) => (
-                <div key={step.id} className="flex flex-col items-center bg-slate-50 px-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-500 ${currentStep >= step.id ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-300 text-slate-300'}`}>
-                        {currentStep > step.id ? <Check size={14} /> : <span className="text-xs">{step.id}</span>}
-                    </div>
-                    <span className={`text-[10px] uppercase tracking-widest mt-2 ${currentStep === step.id ? 'text-slate-800' : 'text-slate-400'}`}>{step.title}</span>
-                </div>
-            ))}
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center pt-24 pb-12 px-6">
+      
+      {/* Progress Bar */}
+      <div className="w-full max-w-xl mb-12">
+        <div className="flex justify-between mb-2">
+          {['Info', 'Style', 'Story', 'Private Token'].map((label, idx) => (
+            <span key={label} className={`text-xs uppercase tracking-wider ${idx <= step ? 'text-slate-800 font-medium' : 'text-slate-300'}`}>
+              {label}
+            </span>
+          ))}
         </div>
+        <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-slate-800 transition-all duration-700 ease-out"
+            style={{ width: `${((step + 1) / 4) * 100}%` }}
+          ></div>
+        </div>
+      </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card className="min-h-[400px] flex flex-col justify-center">
-              
-              {currentStep === 1 && (
-                <div className="space-y-6">
-                   <SectionTitle title="Basic Identity" subtitle="Create a public or private memorial space." />
-                   <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex gap-3">
-                      <Lock className="text-blue-400 shrink-0" size={20} />
-                      <p className="text-xs text-blue-800">Your data will be permanently stored on the K&M Protocol blockchain. This ensures eternal preservation.</p>
-                   </div>
+      {/* Main Card */}
+      <div className="w-full max-w-xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-8 md:p-12 relative overflow-hidden min-h-[550px] flex flex-col justify-between">
+         {/* Gentle Background Blob */}
+         <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
 
-                   <Input 
-                      label="Name of Honoree" 
-                      placeholder="e.g. Eleanor Rigby" 
-                      value={formData.name}
-                      onChange={e => setFormData({...formData, name: e.target.value})}
-                   />
-                   <div className="grid grid-cols-2 gap-4">
-                     <Input 
-                        label="Life Dates" 
-                        placeholder="e.g. 1950 - 2023" 
-                        value={formData.dates}
-                        onChange={e => setFormData({...formData, dates: e.target.value})}
-                     />
-                     <div>
-                        <label className="block text-xs uppercase tracking-widest text-slate-500 mb-2 ml-1">Type</label>
-                        <select 
-                            className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-3 focus:outline-none font-light text-slate-800"
-                            value={formData.type}
-                            onChange={e => setFormData({...formData, type: e.target.value})}
-                        >
-                            <option>Person</option>
-                            <option>Hero</option>
-                            <option>Scientist</option>
-                            <option>Civilian Hero</option>
-                            <option>Pet</option>
-                            <option>Event</option>
-                        </select>
-                     </div>
-                   </div>
-                </div>
-              )}
+         <div className="relative z-10 flex-grow">
+           {renderStepContent()}
+         </div>
 
-              {currentStep === 2 && (
-                <div className="space-y-6">
-                    <SectionTitle title="Select DIY Template" subtitle="Choose the atmosphere for the digital sanctuary." />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {MEMORIAL_TEMPLATES.map(template => (
-                            <div 
-                                key={template.id}
-                                onClick={() => setFormData({...formData, templateId: template.id})}
-                                className={`cursor-pointer group relative rounded-xl overflow-hidden border-2 transition-all duration-300 h-64 flex flex-col justify-end p-4 shadow-lg ${formData.templateId === template.id ? 'border-blue-500 scale-105 shadow-xl' : 'border-transparent opacity-80 hover:opacity-100'}`}
-                            >
-                                <img src={template.bgImage} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                                
-                                <div className="relative z-10">
-                                   <div className={`w-full h-1 mb-2 rounded-full ${template.id === formData.templateId ? 'bg-blue-500' : 'bg-white/20'}`}></div>
-                                   <h3 className="font-serif text-lg text-white">{template.name}</h3>
-                                   <p className="text-xs text-slate-300 line-clamp-2">{template.description}</p>
-                                </div>
-                                
-                                {formData.templateId === template.id && (
-                                   <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full p-1">
-                                      <Check size={12} />
-                                   </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-              )}
-
-              {currentStep === 3 && (
-                <div className="space-y-6">
-                   <SectionTitle title="Essence & Story" subtitle="Weaving the digital tapestry." />
-                   
-                   <TextArea 
-                      label="Key Personality Traits" 
-                      placeholder="e.g. Kind, lover of gardens, quiet strength..." 
-                      className="min-h-[80px]"
-                      value={formData.traits}
-                      onChange={e => setFormData({...formData, traits: e.target.value})}
-                   />
-                   
-                   <div className="flex justify-end -mt-2 mb-2">
-                       <Button 
-                        variant="ghost" 
-                        onClick={handleGenerateBio} 
-                        disabled={loadingAI}
-                        className="text-xs"
-                        icon={Sparkles}
-                       >
-                           {loadingAI ? 'Weaving words...' : 'Generate Bio with AI'}
-                       </Button>
-                   </div>
-
-                   <TextArea 
-                      label="Biography" 
-                      placeholder="The story will appear here..." 
-                      value={formData.bio}
-                      onChange={e => setFormData({...formData, bio: e.target.value})}
-                   />
-                   
-                   <div className="border-t border-slate-100 pt-6">
-                      <label className="block text-xs uppercase tracking-widest text-slate-500 mb-2 ml-1">Media Upload</label>
-                      <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 flex flex-col items-center justify-center text-slate-400 hover:border-slate-400 hover:bg-slate-50 transition-colors cursor-pointer">
-                          <Upload className="mb-2" />
-                          <span className="text-sm">Drag photos or videos here</span>
-                          <span className="text-[10px] mt-1">Stored on IPFS</span>
-                      </div>
-                   </div>
-                </div>
-              )}
-
-              {currentStep === 4 && (
-                <div className="text-center">
-                    <SectionTitle title="Consecration" subtitle="Minting your eternal RWA Badge." />
-                    <div className="flex justify-center mb-8 py-8">
-                        <RWABadge id="PENDING-MINT-001" name={formData.name || 'Unknown'} />
-                    </div>
-                    
-                    <div className="flex items-center justify-center gap-2 text-emerald-600 bg-emerald-50 py-2 px-4 rounded-full mx-auto max-w-xs mb-6 border border-emerald-100">
-                        <Database size={14} />
-                        <span className="text-xs font-mono">Writing to Block 19,234,112...</span>
-                    </div>
-
-                    <p className="text-sm text-slate-500 font-light max-w-md mx-auto mb-6">
-                        This badge serves as the immutable on-chain proof. The initial setup includes 5 POM points to start their journey in the Remembrance Gallery.
-                    </p>
-                </div>
-              )}
-
-              <div className="mt-8 flex justify-between">
-                 <Button variant="ghost" onClick={handleBack} disabled={currentStep === 1} className={currentStep === 1 ? 'invisible' : ''} icon={ArrowLeft}>
-                    Back
-                 </Button>
-                 <Button onClick={handleNext} className="pl-8 pr-8">
-                    {currentStep === 4 ? 'Finalize & Mint' : 'Next Step'}
-                    {currentStep !== 4 && <ArrowRight size={16} />}
-                 </Button>
-              </div>
-
-            </Card>
-          </motion.div>
-        </AnimatePresence>
+         <div className="relative z-10 flex justify-between mt-8 pt-6 border-t border-slate-100">
+           <Button 
+             variant="ghost" 
+             onClick={handleBack} 
+             disabled={step === 0 || loading}
+             className={step === 0 ? 'invisible' : ''}
+           >
+             <ChevronLeft className="w-4 h-4" /> Back
+           </Button>
+           
+           <Button 
+             onClick={handleNext} 
+             disabled={loading}
+             className="min-w-[120px]"
+           >
+             {loading ? (
+                <>
+                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>
+                 Processing
+                </>
+             ) : (
+                <>
+                  {step === CreateStep.BADGE ? 'Create & Mint' : 'Continue'} 
+                  {step !== CreateStep.BADGE && <ChevronRight className="w-4 h-4 ml-1" />}
+                </>
+             )}
+           </Button>
+         </div>
       </div>
     </div>
   );

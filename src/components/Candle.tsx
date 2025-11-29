@@ -1,57 +1,48 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Flame } from 'lucide-react';
 
-export const Candle: React.FC<{ onLight?: () => void }> = ({ onLight }) => {
-  const [isLit, setIsLit] = useState(false);
+interface CandleProps {
+  initialCount?: number;
+  onLight?: () => void;
+}
 
-  const handleClick = () => {
-    if (!isLit) {
-      setIsLit(true);
+export const Candle: React.FC<CandleProps> = ({ initialCount = 0, onLight }) => {
+  const [lit, setLit] = useState(false);
+  const [count, setCount] = useState(initialCount);
+
+  const handleLight = () => {
+    if (!lit) {
+      setLit(true);
+      setCount(prev => prev + 1);
       if (onLight) onLight();
     }
   };
 
   return (
-    <div 
-      className="flex flex-col items-center cursor-pointer group"
-      onClick={handleClick}
-    >
-      <div className="relative w-8 h-24">
-        {/* Flame */}
-        <AnimatePresence>
-          {isLit && (
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 1.5, ease: "easeInOut" }}
-              className="absolute -top-4 left-1/2 -translate-x-1/2 w-4 h-6 bg-gradient-to-t from-orange-400 to-yellow-200 rounded-full blur-[2px] z-10"
-            >
-              <motion.div 
-                animate={{ scale: [1, 1.1, 0.95, 1], rotate: [-1, 1, -2, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                className="w-full h-full"
-              />
-              {/* Glow */}
-              <motion.div 
-                 initial={{ opacity: 0 }}
-                 animate={{ opacity: 0.6 }}
-                 transition={{ duration: 2 }}
-                 className="absolute -top-4 -left-4 w-12 h-16 bg-orange-300 rounded-full blur-xl opacity-40"
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
+    <div className="flex flex-col items-center gap-2">
+      <button 
+        onClick={handleLight}
+        className={`relative group transition-all duration-1000 ${lit ? 'cursor-default' : 'cursor-pointer'}`}
+        aria-label="Light a candle"
+        disabled={lit}
+      >
+        {/* Glow Effect */}
+        <div className={`absolute inset-0 bg-amber-400 rounded-full blur-xl transition-opacity duration-1000 ${lit ? 'opacity-40' : 'opacity-0 group-hover:opacity-20'}`}></div>
+        
         {/* Candle Body */}
-        <div className="w-full h-full bg-slate-200 rounded-sm shadow-inner group-hover:bg-slate-100 transition-colors duration-500 flex justify-center">
-            {/* Wick */}
-            <div className="w-[2px] h-3 bg-slate-400 -mt-3"></div>
+        <div className="relative flex items-center justify-center w-12 h-12 bg-slate-50 border border-slate-200 rounded-full shadow-sm">
+           <Flame 
+            className={`w-6 h-6 transition-all duration-1000 ${
+              lit 
+                ? 'text-amber-500 fill-amber-400 animate-pulse-slow scale-110' 
+                : 'text-slate-300 group-hover:text-slate-400'
+            }`} 
+           />
         </div>
-      </div>
-      
-      <p className={`mt-4 text-xs tracking-widest uppercase transition-colors duration-700 ${isLit ? 'text-amber-600' : 'text-slate-400'}`}>
-        {isLit ? 'Memory Lit' : 'Light a Candle'}
-      </p>
+      </button>
+      <span className="text-xs font-sans text-slate-400 tracking-wider">
+        {lit ? 'You lit a candle' : `${count} candles lit`}
+      </span>
     </div>
   );
 };

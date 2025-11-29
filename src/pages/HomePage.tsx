@@ -1,213 +1,319 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowRight, Star, Heart, Cloud, Globe, Hash } from 'lucide-react';
-import { FadeIn, Button, SectionTitle, Card, TechCard } from '../components/UI';
-import { ShootingStars } from '../components/ShootingStars';
-import { MOCK_NEWS } from '../constants';
+import { ArrowRight, Cloud, Hexagon, Globe, Sparkles, ChevronDown, ShieldCheck, Star, User, Dog } from 'lucide-react';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { leaderboard, loading, error } = useLeaderboard(3);
+  const { leaderboard, loading } = useLeaderboard(3);
+
+  // Helper for generating random meteors
+  const meteors = Array.from({ length: 15 }).map((_, i) => ({
+    left: Math.random() * 100,
+    delay: Math.random() * 5,
+    duration: Math.random() * 3 + 2
+  }));
+
+  const scrollToNext = () => {
+    const nextSection = document.getElementById('cloud-memorial');
+    if (nextSection) nextSection.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const galleryCategories = [
+    { 
+      id: 'hero', 
+      label: 'Heroes', 
+      icon: <ShieldCheck className="w-6 h-6" />, 
+      image: 'https://images.unsplash.com/photo-1617112837937-3d9d33cb42e5?q=80&w=2070&auto=format&fit=crop',
+      desc: 'Firefighters, soldiers, and saviors.'
+    },
+    { 
+      id: 'celebrity', 
+      label: 'Public Figures', 
+      icon: <Star className="w-6 h-6" />, 
+      image: 'https://images.unsplash.com/photo-1522858547137-f1dcec554f55?q=80&w=2070&auto=format&fit=crop',
+      desc: 'Scientists, artists, and leaders.'
+    },
+    { 
+      id: 'civilian', 
+      label: 'Civilians', 
+      icon: <User className="w-6 h-6" />, 
+      image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?q=80&w=2070&auto=format&fit=crop',
+      desc: 'Everyday people, extraordinary lives.'
+    },
+    { 
+      id: 'pet', 
+      label: 'Pets', 
+      icon: <Dog className="w-6 h-6" />, 
+      image: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?q=80&w=2069&auto=format&fit=crop',
+      desc: 'Our eternal loyal companions.'
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-900 overflow-x-hidden">
+    <div className="w-full relative overflow-x-hidden">
       
-      {/* --- HERO SECTION --- */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Deep Space Background with Shooting Stars */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-0" />
-        <ShootingStars />
+      {/* 1. HERO SECTION */}
+      <section className="relative h-screen w-full bg-[#0F172A] overflow-hidden flex flex-col items-center justify-center text-center px-6">
         
-        {/* Glow Orbs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-float" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-float" style={{ animationDelay: '2s' }} />
+        {/* Animated Background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0F172A] via-[#1E293B] to-[#0F172A]"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30"></div>
+        
+        {/* Meteors */}
+        {meteors.map((m, i) => (
+          <span
+            key={i}
+            className="absolute top-0 h-0.5 w-0.5 rounded-full bg-white shadow-[0_0_0_1px_#ffffff10] animate-meteor"
+            style={{
+              left: `${m.left}%`,
+              animationDelay: `${m.delay}s`,
+              animationDuration: `${m.duration}s`,
+              top: '-10px',
+            }}
+          >
+            <div className="pointer-events-none absolute top-1/2 -z-10 h-[1px] w-[50px] -translate-y-1/2 bg-gradient-to-r from-transparent to-white" />
+          </span>
+        ))}
 
-        <div className="relative z-10 text-center px-6 max-w-5xl mx-auto mt-20">
-          <FadeIn>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-blue-200 font-mono mb-6 backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-              K&M ERA PROTOCOL V1.0 LIVE
-            </div>
-            
-            <h1 className="font-serif text-5xl md:text-7xl text-white leading-tight mb-8 drop-shadow-2xl">
-              Let memories last forever,<br />
-              <span className="italic text-transparent bg-clip-text bg-gradient-to-r from-lavender-200 to-blue-200 text-4xl md:text-6xl">
-                Return to original purity.
-              </span>
-            </h1>
-            
-            <p className="text-slate-300 text-lg font-light max-w-2xl mx-auto mb-12 leading-relaxed">
-              The first Tender-Tech ecosystem combining <b>Cloud Memorials</b>, a <b>Public Remembrance Gallery</b>, and <b>Commemorative Digital Heritage Tokens (CDHT)</b>.
-            </p>
+        {/* Content */}
+        <div className="relative z-20 max-w-5xl mx-auto flex flex-col items-center">
+           <h1 className="text-5xl md:text-8xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-slate-400 mb-8 leading-tight tracking-tight animate-fade-in opacity-0" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>
+             Death is not the end <br/>
+             <span className="italic font-light text-slate-400">forgetting is</span>
+           </h1>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button onClick={() => navigate('/create')} className="bg-white text-slate-900 px-8 hover:bg-lavender-50">
-                Create Cloud Memorial
-              </Button>
-              <Button variant="glass" onClick={() => navigate('/heritage')}>
-                View Heritage Tokens
-              </Button>
-            </div>
-          </FadeIn>
+           <p className="text-slate-400 font-light text-lg md:text-xl max-w-xl mx-auto mb-16 animate-fade-in opacity-0" style={{ animationDelay: '0.8s', animationFillMode: 'forwards' }}>
+             Let memories exist eternally in the digital cosmos.
+           </p>
+
+           {/* White Glowing Button */}
+           <div className="group relative animate-fade-in opacity-0" style={{ animationDelay: '1.2s', animationFillMode: 'forwards' }}>
+              <div className="absolute -inset-1 bg-white rounded-full blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+              <button 
+                onClick={() => navigate('/create')}
+                className="relative px-12 py-4 bg-white rounded-full leading-none flex items-center divide-x divide-slate-200 transition-all duration-300 transform group-hover:scale-105 shadow-[0_0_40px_-10px_rgba(255,255,255,0.7)] group-hover:shadow-[0_0_60px_-15px_rgba(255,255,255,1)]"
+              >
+                <span className="flex items-center gap-2 text-slate-900 font-serif text-lg tracking-wide pr-6">
+                  <Sparkles className="w-5 h-5 text-indigo-500" />
+                  Create Cloud Memorial
+                </span>
+                <span className="pl-6 text-indigo-600 group-hover:text-indigo-800 transition duration-200 text-sm font-medium tracking-wider uppercase opacity-0 group-hover:opacity-100 absolute right-8 group-hover:right-6 group-hover:translate-x-0 translate-x-4">
+                  Start Now
+                </span>
+              </button>
+           </div>
+        </div>
+
+        {/* Scroll Indicator */}
+        <div 
+          onClick={scrollToNext}
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/30 hover:text-white cursor-pointer transition-colors animate-bounce"
+        >
+          <ChevronDown className="w-8 h-8" />
         </div>
       </section>
 
-      {/* --- PRODUCT LINE 1: CLOUD MEMORIAL --- */}
-      <section className="py-24 px-6 bg-slate-50 relative">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
-           <FadeIn>
-              <div className="relative">
-                  <div className="absolute -inset-4 bg-gradient-to-r from-purple-200 to-blue-200 rounded-full opacity-30 blur-2xl"></div>
-                  <img 
-                    src="https://picsum.photos/600/600?random=1" 
-                    alt="Cloud Memorial" 
-                    className="relative rounded-2xl shadow-2xl z-10" 
-                  />
-                  {/* Floating UI Elements */}
-                  <motion.div 
-                    animate={{ y: [0, -10, 0] }}
-                    transition={{ duration: 4, repeat: Infinity }}
-                    className="absolute -right-8 top-12 bg-white p-4 rounded-xl shadow-lg z-20 max-w-[200px]"
-                  >
-                     <div className="flex items-center gap-2 mb-2">
-                        <Star className="text-yellow-400" size={16} fill="currentColor" />
-                        <span className="text-xs font-bold text-slate-700">Forever Lit</span>
-                     </div>
-                     <p className="text-xs text-slate-500">"Your light never fades here..."</p>
-                  </motion.div>
-              </div>
-           </FadeIn>
-           <FadeIn delay={0.2}>
-              <div className="flex items-center gap-2 mb-4">
-                 <Cloud className="text-slate-400" size={20} />
-                 <span className="uppercase text-xs tracking-widest text-slate-500">Product Line 01</span>
-              </div>
-              <h2 className="font-serif text-4xl text-slate-800 mb-6">Cloud Memorial Space</h2>
-              <p className="text-slate-600 leading-loose font-light mb-8">
-                A private, immersive sanctuary for your loved ones. Customize the atmosphere with our Tender-Tech aesthetic, upload memories, and perform digital rituals like lighting candles or leaving whispers.
-              </p>
-              <Button variant="secondary" onClick={() => navigate('/create')}>Start a Memorial →</Button>
-           </FadeIn>
-        </div>
-      </section>
-
-      {/* --- PRODUCT LINE 2: REMEMBRANCE GALLERY --- */}
-      <section className="py-24 px-6 bg-white border-y border-slate-100">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-             <div className="flex items-center justify-center gap-2 mb-4">
-                 <Globe className="text-slate-400" size={20} />
-                 <span className="uppercase text-xs tracking-widest text-slate-500">Product Line 02</span>
-              </div>
-              <h2 className="font-serif text-4xl text-slate-800 mb-6">Remembrance Gallery</h2>
-              <p className="text-slate-500">
-                A public hall of fame for humanity. From heroes and scientists to beloved pets, we categorize and honor those who made the world brighter.
-              </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-             {['Heroes', 'Scientists', 'Civilians', 'Pets'].map((cat, i) => (
-                <FadeIn key={cat} delay={i * 0.1}>
-                   <div 
-                     onClick={() => navigate('/gallery')}
-                     className="group cursor-pointer aspect-square rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center hover:bg-slate-800 hover:text-white transition-all duration-500 relative overflow-hidden"
-                   >
-                      <div className="absolute inset-0 bg-gradient-to-br from-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <span className="font-serif text-2xl mb-2">{cat}</span>
-                      <span className="text-xs uppercase tracking-widest opacity-50">View Section</span>
+      {/* 2. CLOUD MEMORIAL SECTION */}
+      <section id="cloud-memorial" className="min-h-[85vh] w-full bg-white flex items-center py-20">
+         <div className="max-w-7xl mx-auto px-6 w-full flex flex-col md:flex-row items-center gap-16">
+            
+            <div className="w-full md:w-1/2 relative">
+               <div className="aspect-[4/5] rounded-3xl overflow-hidden relative shadow-2xl">
+                 <img 
+                   src="https://images.unsplash.com/photo-1519052537078-e6302a4968d4?q=80&w=2670&auto=format&fit=crop" 
+                   alt="Private Memory" 
+                   className="w-full h-full object-cover"
+                 />
+                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent"></div>
+                 <div className="absolute bottom-8 left-8 text-white">
+                   <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-full inline-flex items-center gap-2 mb-3">
+                     <Cloud className="w-4 h-4 text-white" />
+                     <span className="text-xs font-medium uppercase tracking-wider">Private & Encrypted</span>
                    </div>
-                </FadeIn>
-             ))}
-          </div>
-        </div>
-      </section>
+                   <p className="font-serif italic text-lg opacity-90">"A sanctuary just for us."</p>
+                 </div>
+               </div>
+               {/* Decoration */}
+               <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-indigo-50 rounded-full blur-3xl -z-10"></div>
+            </div>
 
-      {/* --- PRODUCT LINE 3: CDHT & NEWS --- */}
-      <section className="py-24 px-6 bg-slate-900 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-blue-900/10 blur-3xl"></div>
-
-        <div className="max-w-7xl mx-auto">
-           <div className="flex flex-col md:flex-row justify-between items-end mb-12">
-              <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Hash className="text-blue-400" size={20} />
-                    <span className="uppercase text-xs tracking-widest text-blue-200">Product Line 03</span>
+            <div className="w-full md:w-1/2">
+               <h2 className="text-4xl md:text-6xl font-serif text-slate-900 mb-6 leading-tight">
+                 Cloud Memorial
+               </h2>
+               <p className="text-slate-500 text-lg font-light leading-relaxed mb-8">
+                 A private digital space to preserve the essence of your loved ones. Upload photos, write letters, and light virtual candles in a secure, tender environment. 
+               </p>
+               <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-4 p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors cursor-default">
+                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-full"><ShieldCheck className="w-5 h-5"/></div>
+                    <div>
+                      <h4 className="font-serif text-slate-800">Private Heritage Token</h4>
+                      <p className="text-xs text-slate-400">Minted exclusively for family members.</p>
+                    </div>
                   </div>
-                  <h2 className="font-serif text-4xl text-white mb-2">Heritage Tokens & Pulse</h2>
-                  <p className="text-slate-400 max-w-lg">
-                    Immutable on-chain proof of existence. Private tokens for personal memorials, and public rankings driven by our POM (Proof of Memory) algorithm.
-                  </p>
-              </div>
-              <Button variant="glass" className="mt-6 md:mt-0" onClick={() => navigate('/heritage')}>
-                  Explore Global Pulse →
-              </Button>
-           </div>
+                  <div className="flex items-center gap-4 p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors cursor-default">
+                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-full"><Sparkles className="w-5 h-5"/></div>
+                    <div>
+                      <h4 className="font-serif text-slate-800">AI Biography</h4>
+                      <p className="text-xs text-slate-400">Let Gemini write a poetic tribute.</p>
+                    </div>
+                  </div>
+               </div>
+               <div className="mt-10">
+                 <button 
+                   onClick={() => navigate('/create')}
+                   className="text-slate-900 font-medium border-b border-slate-900 pb-1 hover:border-indigo-600 hover:text-indigo-600 transition-all flex items-center gap-2"
+                 >
+                   Start a Private Memorial <ArrowRight className="w-4 h-4" />
+                 </button>
+               </div>
+            </div>
+         </div>
+      </section>
 
-           <div className="grid lg:grid-cols-3 gap-8">
-              {/* Leaderboard Preview */}
-              <div className="lg:col-span-2 space-y-4">
-                 <div className="flex items-center justify-between text-white/50 text-xs uppercase tracking-widest mb-2 px-2">
-                    <span>Weekly Top Remembered</span>
-                    <span>POM Algorithm</span>
-                 </div>
-                 {loading ? (
-                   <div className="text-center py-8">
-                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-                     <p className="text-white/50 text-sm mt-4">加载中...</p>
-                   </div>
-                 ) : error ? (
-                   <div className="text-center py-8">
-                     <p className="text-red-400 text-sm">加载失败: {error}</p>
-                   </div>
-                 ) : leaderboard.length === 0 ? (
-                   <div className="text-center py-8">
-                     <p className="text-white/50 text-sm">暂无数据</p>
-                   </div>
-                 ) : (
-                   leaderboard.map((entry, i) => (
-                     <FadeIn key={i} delay={i * 0.1}>
-                       <TechCard className="flex items-center gap-6 group hover:bg-white/5 transition-colors">
-                          <div className="font-mono text-2xl text-blue-300 w-8">0{entry.rank}</div>
-                          <img src={entry.memorial.coverImage} className="w-12 h-12 rounded-full object-cover border border-white/20" alt="" />
-                          <div className="flex-1">
-                             <h4 className="text-white font-serif text-lg">{entry.memorial.name}</h4>
-                             <p className="text-slate-400 text-xs">{entry.memorial.type} • {entry.memorial.badgeId}</p>
-                          </div>
-                          <div className="text-right">
-                             <div className="text-emerald-400 font-mono text-lg">{entry.pomScore}</div>
-                             <div className="text-slate-500 text-[10px] uppercase">POM Score</div>
-                          </div>
-                       </TechCard>
-                     </FadeIn>
-                   ))
-                 )}
+      {/* 3. REMEMBRANCE GALLERY SECTION */}
+      <section className="min-h-screen w-full bg-slate-50 py-24 flex flex-col justify-center">
+         <div className="max-w-7xl mx-auto px-6 w-full mb-12 text-center md:text-left flex flex-col md:flex-row justify-between items-end">
+            <div>
+              <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
+                 <Globe className="w-5 h-5 text-indigo-600" />
+                 <span className="text-sm font-bold uppercase tracking-widest text-indigo-900">Public Community</span>
               </div>
+              <h2 className="text-4xl md:text-6xl font-serif text-slate-900 mb-4">
+                Remembrance Gallery
+              </h2>
+              <p className="text-slate-500 max-w-xl text-lg font-light">
+                Honor the world's souls. Upload a tribute, share stories, and celebrate lives in our public community space.
+              </p>
+            </div>
+            <button 
+              onClick={() => navigate('/gallery')}
+              className="hidden md:flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-full hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl"
+            >
+              Enter Gallery <ArrowRight className="w-4 h-4" />
+            </button>
+         </div>
 
-              {/* News Ticker Preview */}
-              <div className="lg:col-span-1">
-                  <div className="flex items-center justify-between text-white/50 text-xs uppercase tracking-widest mb-6 px-2">
-                    <span>Global Context</span>
-                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                 </div>
-                 <div className="space-y-4">
-                    {MOCK_NEWS.map((news, i) => (
-                       <FadeIn key={i} delay={0.3 + (i * 0.1)}>
-                          <div className="p-4 rounded-xl bg-white/5 border-l-2 border-red-500 backdrop-blur-sm">
-                             <span className="text-[10px] bg-red-500/20 text-red-200 px-2 py-0.5 rounded-full mb-2 inline-block">
-                                {news.category}
-                             </span>
-                             <h5 className="text-white font-serif text-sm mb-2">{news.title}</h5>
-                             <p className="text-slate-400 text-xs line-clamp-2">{news.summary}</p>
-                          </div>
-                       </FadeIn>
-                    ))}
-                 </div>
+         {/* 4 Cards Grid */}
+         <div className="max-w-7xl mx-auto px-6 w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 h-[600px] md:h-[500px]">
+            {galleryCategories.map((cat) => (
+              <div 
+                key={cat.id}
+                onClick={() => navigate('/gallery')}
+                className="relative group overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 ease-out md:hover:w-[140%] md:w-full"
+              >
+                <img 
+                  src={cat.image} 
+                  alt={cat.label} 
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0"
+                />
+                <div className="absolute inset-0 bg-slate-900/60 group-hover:bg-slate-900/30 transition-colors duration-500"></div>
+                
+                <div className="absolute inset-0 p-8 flex flex-col justify-between items-center text-center group-hover:items-start group-hover:text-left transition-all">
+                   <div className="mt-10 p-4 bg-white/10 backdrop-blur-sm rounded-full text-white border border-white/20 group-hover:scale-110 transition-transform">
+                     {cat.icon}
+                   </div>
+                   
+                   <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                     <h3 className="text-2xl font-serif text-white mb-2">{cat.label}</h3>
+                     <p className="text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 max-w-[200px]">
+                       {cat.desc}
+                     </p>
+                     <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-200">
+                        <span className="text-xs text-white border-b border-white pb-0.5">Explore {cat.label}</span>
+                     </div>
+                   </div>
+                </div>
               </div>
-           </div>
-        </div>
+            ))}
+         </div>
+         
+         <div className="mt-8 text-center md:hidden">
+            <button 
+              onClick={() => navigate('/gallery')}
+              className="px-8 py-3 bg-slate-900 text-white rounded-full"
+            >
+              Enter Gallery
+            </button>
+         </div>
+      </section>
+
+      {/* 4. HERITAGE TOKENS SECTION (With Leaderboard Data) */}
+      <section className="min-h-[70vh] w-full bg-[#0B1120] text-white flex items-center relative overflow-hidden">
+         {/* Background Tech Elements */}
+         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-900/20 rounded-full blur-[120px] pointer-events-none"></div>
+         <div className="absolute bottom-0 left-20 w-[400px] h-[400px] bg-blue-900/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+         <div className="max-w-7xl mx-auto px-6 w-full flex flex-col md:flex-row items-center justify-between gap-16 relative z-10">
+            <div className="w-full md:w-1/2">
+               <div className="flex items-center gap-3 mb-8 text-indigo-400">
+                  <Hexagon className="w-6 h-6" />
+                  <span className="text-sm font-bold uppercase tracking-widest">Web3 Integration</span>
+               </div>
+               <h2 className="text-4xl md:text-6xl font-serif text-white mb-6 leading-tight">
+                 Heritage Tokens
+               </h2>
+               <p className="text-slate-400 text-lg font-light leading-relaxed mb-10 max-w-lg">
+                 Immutable proof of existence. See who has been selected for the Public Heritage Token via our PoM Leaderboard.
+               </p>
+               
+               <div className="flex flex-col sm:flex-row gap-6">
+                 <button 
+                   onClick={() => navigate('/tokens')}
+                   className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all flex items-center justify-center gap-2"
+                 >
+                   View Leaderboard <ArrowRight className="w-4 h-4" />
+                 </button>
+                 <button className="px-8 py-4 bg-transparent border border-white/20 hover:bg-white/5 text-white rounded-lg transition-all">
+                   View Contract
+                 </button>
+               </div>
+            </div>
+
+            {/* Leaderboard Data Display (Replaces Abstract Graphic) */}
+            <div className="w-full md:w-1/2 flex justify-center md:justify-end">
+               <div className="relative w-full max-w-md space-y-4">
+                  <h3 className="text-xs uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    Live Ranking (POM Score)
+                  </h3>
+                  
+                  {loading ? (
+                    <div className="animate-pulse space-y-4">
+                      {[1,2,3].map(i => (
+                        <div key={i} className="h-20 bg-slate-800/50 rounded-xl"></div>
+                      ))}
+                    </div>
+                  ) : leaderboard.length > 0 ? (
+                    leaderboard.map((entry, i) => (
+                      <div 
+                        key={i}
+                        className="group relative flex items-center gap-4 p-4 bg-slate-800/40 border border-slate-700/50 rounded-xl hover:bg-slate-800/80 transition-all backdrop-blur-sm"
+                      >
+                         <div className="font-mono text-2xl text-indigo-400/80 w-8 font-bold">0{entry.rank}</div>
+                         <img src={entry.memorial.coverImage} className="w-12 h-12 rounded-lg object-cover border border-white/10" alt="" />
+                         <div className="flex-1">
+                            <h4 className="text-white font-serif text-lg">{entry.memorial.name}</h4>
+                            <p className="text-slate-400 text-xs">{entry.memorial.type} • {entry.memorial.badgeId}</p>
+                         </div>
+                         <div className="text-right">
+                            <div className="text-emerald-400 font-mono text-lg">{entry.pomScore}</div>
+                            <div className="text-slate-600 text-[10px] uppercase">Score</div>
+                         </div>
+                         {/* Glow Effect */}
+                         <div className="absolute inset-0 rounded-xl bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center text-slate-500 border border-slate-800 rounded-xl">
+                       No active rankings.
+                    </div>
+                  )}
+               </div>
+            </div>
+         </div>
       </section>
 
     </div>
