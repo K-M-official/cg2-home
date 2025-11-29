@@ -1,4 +1,5 @@
-import { increment_item_window, get_item_with_stats, get_groups, get_items, get_item_algorithm_metrics, get_leaderboard } from './db';
+import { increment_item_window, get_item_with_stats, get_groups, get_items, get_item_algorithm_metrics, get_leaderboard, update_item_misc_gongpin } from './db';
+import { SHOP_ITEMS } from '../lib/constants';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -71,10 +72,11 @@ const corsHeaders = {
  */
 async function handleIncrement(request: Request, env: Env): Promise<Response> {
   try {
-    const body = await request.json<{ item_id?: number; delta?: number }>();
+    const body = await request.json<{ item_id?: number; delta?: number; tribute_id?: string }>();
     
     const item_id = body.item_id;
-    const delta = body.delta ?? 1;
+    let delta = body.delta ?? 0;
+    const tribute_id = body.tribute_id;
     
     // 参数验证
     if (item_id === undefined || item_id === null || !Number.isInteger(item_id) || item_id <= 0) {
@@ -84,7 +86,23 @@ async function handleIncrement(request: Request, env: Env): Promise<Response> {
       );
     }
     
-    if (typeof delta !== 'number' || !Number.isFinite(delta)) {
+    if (tribute_id) {
+        // Validate and get delta from SHOP_ITEMS
+        const tribute = SHOP_ITEMS.find(item => item.id === tribute_id);
+        if (!tribute) {
+             return new Response(JSON.stringify({ error: 'Invalid tribute_id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        delta = tribute.delta || 1; // Default to 1 if not set
+
+        // Update gongpin in misc field
+        await update_item_misc_gongpin(env.DB, item_id, tribute_id, 1);
+    } else if (delta === 0) {
+         // Neither tribute_id nor valid delta provided (allow delta > 0 for manual testing if needed)
+         return new Response(
+            JSON.stringify({ error: 'INVALID_PARAMS', message: 'tribute_id or delta > 0 is required' }), 
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+    } else if (typeof delta !== 'number' || !Number.isFinite(delta)) {
       return new Response(
         JSON.stringify({ error: 'INVALID_PARAMS', message: 'delta must be a valid number' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -95,7 +113,7 @@ async function handleIncrement(request: Request, env: Env): Promise<Response> {
     await increment_item_window(env.DB, item_id, delta);
     
     return new Response(
-      JSON.stringify({ success: true }), 
+      JSON.stringify({ success: true, delta }), 
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

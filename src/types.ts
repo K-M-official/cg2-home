@@ -35,6 +35,7 @@ export interface Memorial {
   templateId: TemplateId; // New: Selected Template
   timeline: TimelineEvent[];
   stats: InteractionStats; // New: Granular stats for POM
+  gongpinStats?: Record<string, number>; // Detailed tribute counts
   messages: Message[];
   badgeId: string; // RWA Badge ID
   pomScore?: number; // For leaderboard
@@ -66,11 +67,5 @@ export interface LeaderboardEntry {
   change: 'up' | 'down' | 'same';
 }
 
-export interface ShopItem {
-  id: string;
-  name: string;
-  icon: string; // Emoji or Icon name
-  price: number; // In Tokens
-  type: 'flower' | 'candle' | 'food' | 'toy';
-  description: string;
-}
+import { ShopItem } from '../lib/constants';
+export type { ShopItem };

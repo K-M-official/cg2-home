@@ -5,7 +5,7 @@ import { MessageSquare, Share2, Heart, Gift, Flame, Flower } from 'lucide-react'
 import { FadeIn, Button, SectionTitle, Card, TextArea } from '../components/UI';
 import { RWABadge } from '../components/RWABadge';
 import { VirtualShop } from '../components/VirtualShop';
-import { MEMORIAL_TEMPLATES, MOCK_MEMORIALS } from '../constants'; // Keep MOCK for fallback/templates
+import { MEMORIAL_TEMPLATES, MOCK_MEMORIALS, SHOP_ITEMS } from '../constants'; // Keep MOCK for fallback/templates
 import type { Memorial } from '../types';
 import { usePhantomWallet } from '../hooks/usePhantomWallet';
 
@@ -15,7 +15,13 @@ const MemorialPage: React.FC = () => {
   const [memorial, setMemorial] = useState<Memorial | null>(null);
   const [message, setMessage] = useState('');
   const [isShopOpen, setIsShopOpen] = useState(false);
+  
+  // Legacy stats for backwards compatibility or summary
   const [localStats, setLocalStats] = useState({ candles: 0, flowers: 0, tributes: 0 });
+  
+  // New detailed stats
+  const [localGongpinStats, setLocalGongpinStats] = useState<Record<string, number>>({});
+  const [localPomScore, setLocalPomScore] = useState(0);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +41,9 @@ const MemorialPage: React.FC = () => {
                 try {
                     parsedMisc = item.misc ? JSON.parse(item.misc) : {};
                 } catch { parsedMisc = {}; }
+
+                // Parse gongpin stats
+                const gongpinStats = parsedMisc.gongpin || {};
 
                 const mockFallback = MOCK_MEMORIALS[0]; // Fallback for styles
 
@@ -57,10 +66,14 @@ const MemorialPage: React.FC = () => {
                     messages: parsedMisc.messages || [],
                     badgeId: `RWA-${item.id}`,
                     pomScore: data.algorithm?.P || 0,
+                    gongpinStats: gongpinStats,
+                    onChainHash: parsedMisc.onChainHash
                 };
                 
                 setMemorial(mappedMemorial);
                 setLocalStats(mappedMemorial.stats);
+                setLocalGongpinStats(gongpinStats);
+                setLocalPomScore(mappedMemorial.pomScore || 0);
             } else {
                 console.error("Failed to fetch memorial details");
                 // Fallback to mock if API fails (for development/demo)
@@ -68,6 +81,8 @@ const MemorialPage: React.FC = () => {
                 if (found) {
                     setMemorial(found);
                     setLocalStats(found.stats);
+                    setLocalGongpinStats({});
+                    setLocalPomScore(found.pomScore || 0);
                 } else {
                     setError("Memorial not found");
                 }
@@ -99,25 +114,32 @@ const MemorialPage: React.FC = () => {
           return;
       }
 
-      // Calculate delta based on item type
-      let delta = 1;
-      if (item.type === 'candle') delta = 1;
-      else if (item.type === 'flower') delta = 2;
-      else delta = 5;
-
-      // Call API to increment heat
+      // Call API to increment heat with tribute_id
       try {
           await fetch('/api/item/increment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ item_id: parseInt(memorial.id), delta })
+              body: JSON.stringify({ 
+                  item_id: parseInt(memorial.id), 
+                  tribute_id: item.id 
+              })
           });
-          console.log(`Heat increased by ${delta} for item ${memorial.id}`);
+          console.log(`Tribute offered: ${item.id}`);
       } catch (err) {
-          console.error('Failed to increment heat:', err);
+          console.error('Failed to offer tribute:', err);
       }
 
       // Optimistic update
+      setLocalGongpinStats(prev => ({
+          ...prev,
+          [item.id]: (prev[item.id] || 0) + 1
+      }));
+      
+      // Update POM score (approximate)
+      const delta = item.delta || 1;
+      setLocalPomScore(prev => prev + delta);
+
+      // Keep legacy stats updated for now if needed, or remove if unused
       setLocalStats(prev => {
           if (item.type === 'candle') return { ...prev, candles: prev.candles + 1 };
           if (item.type === 'flower') return { ...prev, flowers: prev.flowers + 1 };
@@ -164,28 +186,30 @@ const MemorialPage: React.FC = () => {
       {/* Interaction Bar - POM Drivers */}
       <div className="max-w-7xl mx-auto px-6 -mt-8 relative z-30">
           <Card className="flex flex-wrap justify-between items-center gap-4 bg-white/90 backdrop-blur-md shadow-xl border-white/50 max-w-5xl mx-auto">
-             <div className="flex gap-6 md:gap-12 mx-auto md:mx-0">
-                 <div className="text-center">
-                     <div className="flex items-center gap-1 text-orange-500 justify-center">
-                         <Flame size={18} fill="currentColor" />
-                         <span className="font-bold text-lg">{localStats.candles}</span>
+             <div className="flex gap-6 md:gap-8 mx-auto md:mx-0 flex-wrap justify-center">
+                 {/* POM Score */}
+                 <div className="text-center min-w-[60px]">
+                     <div className="flex items-center gap-1 text-slate-800 justify-center">
+                         <span className="font-bold text-lg font-mono">{Math.floor(localPomScore)}</span>
                      </div>
-                     <span className="text-[10px] uppercase tracking-widest text-slate-400">Candles</span>
+                     <span className="text-[10px] uppercase tracking-widest text-slate-400">POM</span>
                  </div>
-                 <div className="text-center">
-                     <div className="flex items-center gap-1 text-pink-500 justify-center">
-                         <Flower size={18} fill="currentColor" />
-                         <span className="font-bold text-lg">{localStats.flowers}</span>
-                     </div>
-                     <span className="text-[10px] uppercase tracking-widest text-slate-400">Flowers</span>
-                 </div>
-                 <div className="text-center">
-                     <div className="flex items-center gap-1 text-purple-500 justify-center">
-                         <Gift size={18} fill="currentColor" />
-                         <span className="font-bold text-lg">{localStats.tributes}</span>
-                     </div>
-                     <span className="text-[10px] uppercase tracking-widest text-slate-400">Tributes</span>
-                 </div>
+
+                 {/* Dynamic Tributes */}
+                 {SHOP_ITEMS.map(shopItem => {
+                     const count = localGongpinStats[shopItem.id] || 0;
+                     if (count === 0) return null;
+                     
+                     return (
+                        <div key={shopItem.id} className="text-center min-w-[60px]">
+                            <div className="flex items-center gap-1 text-slate-700 justify-center">
+                                <span className="text-xl">{shopItem.icon}</span>
+                                <span className="font-bold text-lg">{count}</span>
+                            </div>
+                            <span className="text-[10px] uppercase tracking-widest text-slate-400">{shopItem.name}</span>
+                        </div>
+                     );
+                 })}
              </div>
              
              <Button 

@@ -1,13 +1,8 @@
-import type { Memorial, NewsItem, LeaderboardEntry, ShopItem } from './types';
+import type { Memorial, NewsItem, LeaderboardEntry } from './types';
 import { MemorialType } from './types';
+import { SHOP_ITEMS } from '../lib/constants';
 
-export const SHOP_ITEMS: ShopItem[] = [
-  { id: 'candle', name: 'Eternal Flame', icon: '🕯️', price: 1, type: 'candle', description: 'Light a path for them.' },
-  { id: 'flower', name: 'White Rose', icon: '🌹', price: 5, type: 'flower', description: 'A symbol of pure love.' },
-  { id: 'wreath', name: 'Hero Wreath', icon: '🌿', price: 20, type: 'flower', description: 'Honoring great sacrifice.' },
-  { id: 'toy', name: 'Squeaky Toy', icon: '🎾', price: 3, type: 'toy', description: 'For the goodest boy/girl.' },
-  { id: 'treat', name: 'Heavenly Treat', icon: '🦴', price: 2, type: 'food', description: 'A favorite snack.' },
-];
+export { SHOP_ITEMS };
 
 export const MEMORIAL_TEMPLATES = [
   {
@@ -131,26 +126,3 @@ export const MOCK_LEADERBOARD: LeaderboardEntry[] = [
   { rank: 4, memorial: MOCK_MEMORIALS[2], pomScore: 88.0, change: 'down' },
 ];
 
-
-export const MISCELLANEOUS = {
-  howItWorksTitle: "How It Works",
-  howItWorksBody: [
-    "K&M ERA is designed with simplicity and privacy first principles. The text and images you post in the Memorial Hall are uploaded to the Web3 Arweave network, forming an immutable decentralized record.",
-    "The configuration and interaction data of the Cloud Memorial will be directly uploaded to the chain without storage or transit through our platform, ensuring maximum privacy protection.",
-    "For the sake of experience and usability, we perform necessary encryption and de-sensitization processing on the frontend, only interacting with the chain locally, maximizing the data exposure surface.",
-  ],
-  termsTitle: "Terms of Service",
-  termsBody: [
-    "Using K&M ERA represents that you are at least the age of majority and have full legal capacity. Please do not upload content that violates laws, infringes on rights, defames, incites hatred, violence, or other illegal or public order content.",
-    "The platform does not assume the obligation to review user-generated content, but reserves the right to take down related content and restrict access according to laws, regulations, rights holder notifications, and platform rules.",
-    "For service exceptions or data delays caused by blockchain network congestion, third-party node exceptions, smart contract risks, or unforeseeable factors, the platform does not assume responsibility for direct or indirect losses resulting from such exceptions.",
-    "If you use the fee托管与提取 functionality, you should properly store the keys, mnemonics, and wallet permissions yourself, and the asset risks resulting from such operations are borne by you.",
-  ],
-  privacyTitle: "Privacy Policy",
-  privacyBody: [
-    "We try to minimize the collection of personal information. Except for necessary functional Cookies and anti-abuse security strategies, we do not perform behavior tracking analysis.",
-    "The data generated in the Memorial Hall and Cloud Memorial is defaulted to be directly uploaded to the chain or entered into decentralized storage; we do not retain identifiable plaintext data on the server side.",
-    "The email, phone number, and other contact information you fill in when submitting an application or contacting us are only used for communication and service delivery and will not be sold to third parties.",
-    "Under the requirements of laws or obligations to fulfill legal obligations, we may provide necessary information to law enforcement and judicial authorities, but will strictly follow the principles of legality and minimization.",
-  ],
-} as const;

@@ -64,6 +64,43 @@ export async function increment_item_window(
 }
 
 /**
+ * 更新 item 的 misc 字段中的 gongpin 数据
+ * misc: { gongpin: { "candle": 10, "flower": 5 } }
+ */
+export async function update_item_misc_gongpin(
+    db: D1Database, 
+    itemId: number, 
+    tributeId: string, 
+    count: number = 1
+): Promise<void> {
+    // 1. Get current misc
+    const item = await db.prepare('SELECT misc FROM items WHERE id = ?').bind(itemId).first<{ misc: string }>();
+    if (!item) return; // Item not found
+
+    let misc: any = {};
+    try {
+        misc = item.misc ? JSON.parse(item.misc) : {};
+    } catch (e) {
+        misc = {};
+    }
+
+    // 2. Update gongpin map
+    if (!misc.gongpin) {
+        misc.gongpin = {};
+    }
+    
+    // Initialize if not exists
+    if (!misc.gongpin[tributeId]) {
+        misc.gongpin[tributeId] = 0;
+    }
+
+    misc.gongpin[tributeId] += count;
+
+    // 3. Save back
+    await db.prepare('UPDATE items SET misc = ? WHERE id = ?').bind(JSON.stringify(misc), itemId).run();
+}
+
+/**
  * 获取指定时间范围内的窗口统计
  */
 export async function get_window_stats(
