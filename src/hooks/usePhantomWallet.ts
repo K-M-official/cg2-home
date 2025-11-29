@@ -31,7 +31,7 @@ export const usePhantomWallet = () => {
   const connectWallet = async () => {
     console.log('connectWallet called');
     setError(null);
-    
+
     if (!checkIfPhantomInstalled()) {
       setError('Phantom钱包未安装');
       window.open('https://phantom.app/', '_blank');
@@ -95,7 +95,7 @@ export const usePhantomWallet = () => {
       });
 
       // 尝试自动连接（如果之前已授权）
-      provider.request({ method: 'connect', params: { onlyIfTrusted: true } })
+      provider.request({ method: 'connect' })
         .then((response: any) => {
           if (response.publicKey) {
             setWalletAddress(response.publicKey.toString());
