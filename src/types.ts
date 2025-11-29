@@ -68,5 +68,3 @@ export interface LeaderboardEntry {
   change: 'up' | 'down' | 'same';
 }
 
-import { ShopItem } from '../lib/constants';
-export type { ShopItem };

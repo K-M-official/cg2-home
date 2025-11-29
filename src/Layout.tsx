@@ -190,11 +190,11 @@ const Layout: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 py-16 px-6 border-t border-slate-800">
-         <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-12">
+      <footer className="w-full bg-slate-900 text-slate-300 py-16 border-t border-slate-800">
+         <div className="mx-auto px-6 grid md:grid-cols-4 gap-12">
              <div className="col-span-2">
                  <h2 className="font-serif text-2xl text-white mb-4">K&M ERA</h2>
-                 <p className="font-light text-sm leading-relaxed max-w-sm">
+                 <p className="font-light text-sm leading-relaxed max-w-sm opacity-80">
                      A tender-tech sanctuary for digital immortality. We believe memories deserve a home as permanent as the stars.
                  </p>
              </div>
@@ -209,8 +209,8 @@ const Layout: React.FC = () => {
              <div>
                  <h4 className="uppercase text-xs tracking-widest text-white mb-6">Legal</h4>
                  <ul className="space-y-4 text-sm font-light">
-                     <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                     <li><a href="#" className="hover:text-white transition-colors">Terms of Eternity</a></li>
+                     <li><button onClick={() => navigate('/about/privacy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
+                     <li><button onClick={() => navigate('/about/terms')} className="hover:text-white transition-colors">Terms of Service</button></li>
                  </ul>
              </div>
          </div>

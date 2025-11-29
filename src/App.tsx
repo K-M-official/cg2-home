@@ -6,6 +6,8 @@ import CreatePage from './pages/CreatePage';
 import MemorialPage from './pages/MemorialPage';
 import GalleryPage from './pages/GalleryPage';
 import HeritagePage from './pages/HeritagePage';
+import AboutPage from './pages/AboutPage';
+import { PrivacyContent, TermsContent } from './components/LegalContent';
 import { GalleryProvider } from './context/GalleryContext';
 
 const App: React.FC = () => {
@@ -19,6 +21,10 @@ const App: React.FC = () => {
             <Route path="memorial/:id" element={<MemorialPage />} />
             <Route path="gallery" element={<GalleryPage />} />
             <Route path="heritage" element={<HeritagePage />} />
+            <Route path="about" element={<AboutPage />}>
+               <Route path="privacy" element={<PrivacyContent />} />
+               <Route path="terms" element={<TermsContent />} />
+            </Route>
           </Route>
         </Routes>
       </Router>

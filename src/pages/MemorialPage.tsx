@@ -5,7 +5,8 @@ import { MessageSquare, Share2, Heart, Gift, Flame, Flower } from 'lucide-react'
 import { FadeIn, Button, SectionTitle, Card, TextArea } from '../components/UI';
 import { RWABadge } from '../components/RWABadge';
 import { VirtualShop } from '../components/VirtualShop';
-import { MEMORIAL_TEMPLATES, MOCK_MEMORIALS, SHOP_ITEMS } from '../constants'; // Keep MOCK for fallback/templates
+import { MEMORIAL_TEMPLATES, MOCK_MEMORIALS } from '../constants'; // Keep MOCK for fallback/templates
+import { SHOP_ITEMS } from '../../lib/constants';
 import type { Memorial } from '../types';
 import { usePhantomWallet } from '../hooks/usePhantomWallet';
 

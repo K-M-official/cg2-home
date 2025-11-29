@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Memorial } from '../types';
-import { MOCK_MEMORIALS, SHOP_ITEMS } from '../constants';
+import { MOCK_MEMORIALS } from '../constants';
+import { SHOP_ITEMS } from '../../lib/constants';
 
 // Group 类型定义
 export interface Group {
