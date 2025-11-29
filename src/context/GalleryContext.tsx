@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Memorial } from '../types';
-import { MOCK_MEMORIALS } from '../constants';
+import { MOCK_MEMORIALS, SHOP_ITEMS } from '../constants';
 
 // Group 类型定义
 export interface Group {
@@ -19,6 +19,8 @@ interface ApiItem {
   misc: string;
   description: string;
   created_at: string;
+  pomScore?: number;
+  delta?: number;
 }
 
 interface GalleryContextType {
@@ -41,8 +43,15 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [loadingItems, setLoadingItems] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // 缓存 items: groupId -> Memorial[]
+        // 缓存 items: groupId -> Memorial[]
   const [itemsCache, setItemsCache] = useState<Record<string, Memorial[]>>({});
+
+  // 清除缓存函数，当组件卸载或重新进入时清除缓存
+  useEffect(() => {
+      return () => {
+          setItemsCache({});
+      };
+  }, []);
 
   // 1. Fetch Groups (只执行一次)
   useEffect(() => {
@@ -71,12 +80,12 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
     let isMounted = true;
 
     const fetchItems = async () => {
-      // 检查缓存
-      const cacheKey = String(activeGroupId);
-      if (itemsCache[cacheKey]) {
-        setItems(itemsCache[cacheKey]);
-        return;
-      }
+      // 暂时禁用缓存以保证数据实时性
+      // const cacheKey = String(activeGroupId);
+      // if (itemsCache[cacheKey]) {
+      //   setItems(itemsCache[cacheKey]);
+      //   return;
+      // }
 
       setLoadingItems(true);
       setError(null);
@@ -87,8 +96,8 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
         if (activeGroupId === 'All') {
             // 临时：获取 group 1 和 2 的数据合并，模拟 "All"
             const [res1, res2] = await Promise.all([
-                fetch('/api/items?group_id=1'),
-                fetch('/api/items?group_id=2')
+                fetch('/api/items?group_id=1', { cache: 'no-store' }),
+                fetch('/api/items?group_id=2', { cache: 'no-store' })
             ]);
             
             if (!isMounted) return; // Check after async
@@ -98,7 +107,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
             
             fetchedItems = [...d1.items, ...d2.items];
         } else {
-            const response = await fetch(`/api/items?group_id=${activeGroupId}`);
+            const response = await fetch(`/api/items?group_id=${activeGroupId}`, { cache: 'no-store' });
             if (!isMounted) return; // Check after async
             
             if (!response.ok) throw new Error('Failed to fetch items');
@@ -115,6 +124,19 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
 
             const mockFallback = MOCK_MEMORIALS[0];
 
+            // Calculate stats from misc.gongpin
+            const gongpinStats = parsedMisc.gongpin || {};
+            const stats = { candles: 0, flowers: 0, tributes: 0, shares: 0 };
+
+            Object.entries(gongpinStats).forEach(([tributeId, count]) => {
+                const shopItem = SHOP_ITEMS.find(i => i.id === tributeId);
+                if (shopItem && typeof count === 'number') {
+                    if (shopItem.type === 'candle') stats.candles += count;
+                    else if (shopItem.type === 'flower') stats.flowers += count;
+                    else stats.tributes += count;
+                }
+            });
+
             return {
                 id: String(item.id),
                 name: item.title,
@@ -125,10 +147,11 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
                 images: parsedMisc.images || [],
                 templateId: 'ethereal-garden',
                 timeline: [],
-                stats: { candles: 0, flowers: 0, tributes: 0, shares: 0 },
+                stats: stats,
                 messages: [],
                 badgeId: `RWA-${item.id}`,
-                pomScore: 0,
+                pomScore: item.pomScore || 0,
+                delta: item.delta || 0,
             };
         });
 
@@ -137,7 +160,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
         setItems(mappedItems);
         
         // 更新缓存
-        setItemsCache(prev => ({ ...prev, [cacheKey]: mappedItems }));
+        // setItemsCache(prev => ({ ...prev, [cacheKey]: mappedItems }));
 
       } catch (err: any) {
         if (!isMounted) return;

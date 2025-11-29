@@ -22,6 +22,7 @@ const MemorialPage: React.FC = () => {
   // New detailed stats
   const [localGongpinStats, setLocalGongpinStats] = useState<Record<string, number>>({});
   const [localPomScore, setLocalPomScore] = useState(0);
+  const [localM, setLocalM] = useState(0);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +75,7 @@ const MemorialPage: React.FC = () => {
                 setLocalStats(mappedMemorial.stats);
                 setLocalGongpinStats(gongpinStats);
                 setLocalPomScore(mappedMemorial.pomScore || 0);
+                setLocalM(data.algorithm?.M || 0);
             } else {
                 console.error("Failed to fetch memorial details");
                 // Fallback to mock if API fails (for development/demo)
@@ -83,6 +85,7 @@ const MemorialPage: React.FC = () => {
                     setLocalStats(found.stats);
                     setLocalGongpinStats({});
                     setLocalPomScore(found.pomScore || 0);
+                    setLocalM(0);
                 } else {
                     setError("Memorial not found");
                 }
@@ -116,7 +119,7 @@ const MemorialPage: React.FC = () => {
 
       // Call API to increment heat with tribute_id
       try {
-          await fetch('/api/item/increment', {
+          const response = await fetch('/api/item/increment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
@@ -124,22 +127,26 @@ const MemorialPage: React.FC = () => {
                   tribute_id: item.id 
               })
           });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+              if (typeof data.P === 'number') setLocalPomScore(data.P);
+              if (typeof data.M === 'number') setLocalM(data.M);
+          }
+          
           console.log(`Tribute offered: ${item.id}`);
       } catch (err) {
           console.error('Failed to offer tribute:', err);
       }
 
-      // Optimistic update
+      // Optimistic update for counts
       setLocalGongpinStats(prev => ({
           ...prev,
           [item.id]: (prev[item.id] || 0) + 1
       }));
       
-      // Update POM score (approximate)
-      const delta = item.delta || 1;
-      setLocalPomScore(prev => prev + delta);
-
-      // Keep legacy stats updated for now if needed, or remove if unused
+      // Legacy update (optional)
       setLocalStats(prev => {
           if (item.type === 'candle') return { ...prev, candles: prev.candles + 1 };
           if (item.type === 'flower') return { ...prev, flowers: prev.flowers + 1 };
@@ -193,6 +200,14 @@ const MemorialPage: React.FC = () => {
                          <span className="font-bold text-lg font-mono">{Math.floor(localPomScore)}</span>
                      </div>
                      <span className="text-[10px] uppercase tracking-widest text-slate-400">POM</span>
+                 </div>
+
+                 {/* Delta / Heat */}
+                 <div className="text-center min-w-[60px]">
+                     <div className="flex items-center gap-1 text-slate-800 justify-center">
+                         <span className="font-bold text-lg font-mono">{localM.toFixed(2)}</span>
+                     </div>
+                     <span className="text-[10px] uppercase tracking-widest text-slate-400">DELTA</span>
                  </div>
 
                  {/* Dynamic Tributes */}

@@ -39,6 +39,7 @@ export interface Memorial {
   messages: Message[];
   badgeId: string; // RWA Badge ID
   pomScore?: number; // For leaderboard
+  delta?: number; // For heat/delta
   onChainHash?: string; // New: Blockchain storage hash
 }
 

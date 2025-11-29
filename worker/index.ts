@@ -112,8 +112,11 @@ async function handleIncrement(request: Request, env: Env): Promise<Response> {
     // 执行增量操作
     await increment_item_window(env.DB, item_id, delta);
     
+    // 计算最新的 M 和 P
+    const { M, P } = await get_item_algorithm_metrics(env.DB, item_id);
+
     return new Response(
-      JSON.stringify({ success: true, delta }), 
+      JSON.stringify({ success: true, delta, M, P }), 
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
@@ -213,26 +216,44 @@ async function handleGetItems(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const group_id_str = url.searchParams.get('group_id');
     
-    if (!group_id_str) {
-      return new Response(
-        JSON.stringify({ error: 'INVALID_PARAMS', message: 'group_id is required' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    let group_id: number | null = null;
     
-    const group_id = parseInt(group_id_str, 10);
-    
-    if (!Number.isInteger(group_id) || group_id <= 0) {
-      return new Response(
-        JSON.stringify({ error: 'INVALID_PARAMS', message: 'group_id must be a positive integer' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (group_id_str) {
+        const parsed = parseInt(group_id_str, 10);
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+          return new Response(
+            JSON.stringify({ error: 'INVALID_PARAMS', message: 'group_id must be a positive integer' }), 
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        group_id = parsed;
     }
     
     const items = await get_items(env.DB, group_id);
     
+    // Enhance items with stats using parallel queries (similar to MemorialPage handling)
+    const itemsWithStats = await Promise.all(items.map(async (item) => {
+        try {
+             // Calculate algorithm metrics (M, P)
+             const { M, P } = await get_item_algorithm_metrics(env.DB, item.id);
+             
+             return {
+                 ...item,
+                 pomScore: P,
+                 delta: M
+             };
+        } catch (e) {
+            console.error(`Failed to get stats for item ${item.id}:`, e);
+            return {
+                ...item,
+                pomScore: 0,
+                delta: 0
+            };
+        }
+    }));
+
     return new Response(
-      JSON.stringify({ items }), 
+      JSON.stringify({ items: itemsWithStats }), 
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

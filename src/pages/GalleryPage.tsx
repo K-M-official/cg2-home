@@ -18,8 +18,10 @@ const GalleryPage: React.FC = () => {
             <div className="max-w-7xl mx-auto px-6">
 
                 {/* Header */}
-                <div className="mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
-                    <SectionTitle title="Remembrance Gallery" subtitle="Echoes of beautiful lives, categorized by their impact." className="mb-0 md:text-left text-center" />
+                <div className="mb-8 flex flex-col justify-center items-center md:flex-row justify-between items-end gap-6">
+                    <SectionTitle title="Remembrance Gallery"
+                        subtitle="Echoes of beautiful lives, categorized by their impact."
+                        className="mb-0 md:text-left text-center" />
                 </div>
 
                 {/* Controls */}
@@ -101,18 +103,29 @@ const GalleryPage: React.FC = () => {
 
                                             <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
                                                 <div className="flex gap-3">
-                                                    <div className="flex items-center gap-1 text-slate-600">
+                                                    <div className="flex items-center gap-1 text-slate-600" title="Candles">
                                                         <Flame size={14} className="text-orange-500" />
                                                         <span className="text-xs font-bold">{memorial.stats.candles}</span>
                                                     </div>
-                                                    <div className="flex items-center gap-1 text-slate-600">
+                                                    <div className="flex items-center gap-1 text-slate-600" title="Flowers">
                                                         <Flower size={14} className="text-pink-500" />
                                                         <span className="text-xs font-bold">{memorial.stats.flowers}</span>
                                                     </div>
+                                                    <div className="flex items-center gap-1 text-slate-600" title="Other Tributes">
+                                                        <span className="text-sm">🎁</span>
+                                                        <span className="text-xs font-bold">{memorial.stats.tributes}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <div className="text-[10px] uppercase text-slate-400">POM Score</div>
-                                                    <div className="font-mono text-sm text-emerald-600 font-bold">{memorial.pomScore}</div>
+                                                <div className="text-right flex flex-row items-center gap-3">
+                                                    <div className="flex flex-col items-end">
+                                                       <span className="text-[10px] uppercase text-slate-400 leading-none mb-1">POM</span>
+                                                       <span className="font-mono text-sm text-emerald-600 font-bold leading-none">{Math.floor(memorial.pomScore || 0)}</span>
+                                                    </div>
+                                                    <div className="w-px h-6 bg-slate-200"></div>
+                                                    <div className="flex flex-col items-end">
+                                                       <span className="text-[10px] uppercase text-slate-400 leading-none mb-1">DELTA</span>
+                                                       <span className="font-mono text-sm text-slate-500 font-bold leading-none">{(memorial.delta || 0).toFixed(2)}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

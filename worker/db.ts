@@ -13,14 +13,24 @@ export async function get_groups(db: D1Database): Promise<ItemGroup[]> {
 }
 
 /**
- * 获取指定 group 的所有 items
+ * 获取 items
+ * 如果 group_id 为 null，则获取所有 items
+ * 否则获取指定 group 的 items
  */
-export async function get_items(db: D1Database, group_id: number): Promise<Item[]> {
-    const items = await db.prepare(`
-        SELECT * FROM items
-        WHERE group_id = ?
-        ORDER BY created_at DESC
-    `).bind(group_id).all<Item>();
+export async function get_items(db: D1Database, group_id: number | null = null): Promise<Item[]> {
+    let query = `SELECT * FROM items`;
+    const params: any[] = [];
+    
+    if (group_id !== null) {
+        query += ` WHERE group_id = ?`;
+        params.push(group_id);
+    }
+    
+    query += ` ORDER BY created_at DESC`;
+    
+    const stmt = db.prepare(query).bind(...params);
+    const items = await stmt.all<Item>();
+    
     return items.results;
 }
 
