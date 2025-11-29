@@ -12,8 +12,14 @@
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
-		"react": "^19.1.1",
-		"react-dom": "^19.1.1"
+		"@google/genai": "^1.30.0",
+		"class-variance-authority": "^0.7.1",
+		"framer-motion": "^12.23.24",
+		"lucide-react": "^0.555.0",
+		"anyswap": "^0.1.0",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0",
+		"react-router-dom": "^7.9.6"
 	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "^1.15.3",
