@@ -95,17 +95,31 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
         let fetchedItems: ApiItem[] = [];
 
         if (activeGroupId === 'All') {
-            const [res1, res2] = await Promise.all([
-                fetch('/api/items?group_id=1', { cache: 'no-store' }),
-                fetch('/api/items?group_id=2', { cache: 'no-store' })
-            ]);
-            
-            if (!isMounted) return;
+            // 动态获取所有 groups 的 items
+            if (groups.length === 0) {
+                // 如果还没有加载 groups，直接获取所有 items（不带 group_id 参数）
+                const response = await fetch('/api/items', { cache: 'no-store' });
+                if (!isMounted) return;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    fetchedItems = data.items || [];
+                }
+            } else {
+                // 并行请求所有 groups 的 items
+                const requests = groups.map(group => 
+                    fetch(`/api/items?group_id=${group.id}`, { cache: 'no-store' })
+                );
+                
+                const responses = await Promise.all(requests);
+                if (!isMounted) return;
 
-            const d1 = res1.ok ? await res1.json() : { items: [] };
-            const d2 = res2.ok ? await res2.json() : { items: [] };
-            
-            fetchedItems = [...d1.items, ...d2.items];
+                const allData = await Promise.all(
+                    responses.map(res => res.ok ? res.json() : { items: [] })
+                );
+                
+                fetchedItems = allData.flatMap(d => d.items || []);
+            }
         } else {
             const response = await fetch(`/api/items?group_id=${activeGroupId}`, { cache: 'no-store' });
             if (!isMounted) return;
@@ -141,7 +155,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
                 type: parsedMisc.type || 'Person',
                 dates: parsedMisc.dates || (parsedMisc.birthDate ? `${parsedMisc.birthDate} - ${parsedMisc.deathDate || ''}` : 'Unknown'),
                 bio: item.description ? item.description.replace(/<[^>]+>/g, '') : 'No description',
-                coverImage: parsedMisc.image || mockFallback.coverImage,
+                coverImage: parsedMisc.coverImage || parsedMisc.image || mockFallback.coverImage,
                 images: parsedMisc.images || [],
                 templateId: 'ethereal-garden',
                 timeline: [],
@@ -195,7 +209,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
                   type: parsedMisc.type || 'Person',
                   dates: parsedMisc.dates || (parsedMisc.birthDate ? `${parsedMisc.birthDate} - ${parsedMisc.deathDate || ''}` : 'Unknown'),
                   bio: item.description ? item.description.replace(/<[^>]+>/g, '') : 'No description',
-                  coverImage: parsedMisc.image || mockFallback.coverImage,
+                  coverImage: parsedMisc.coverImage || parsedMisc.image || mockFallback.coverImage,
                   images: parsedMisc.images || [],
                   templateId: parsedMisc.templateId || 'ethereal-garden',
                   timeline: parsedMisc.timeline || [],

@@ -20,6 +20,12 @@
 			"database_id": "4b019dbd-64d5-4137-b5c7-ab8b14dac463"
 		}
 	],
+	"r2_buckets": [
+		{
+			"binding": "R2",
+			"bucket_name": "cg2",
+		}
+	],
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

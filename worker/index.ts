@@ -1,4 +1,4 @@
-import { increment_item_window, get_item_with_stats, get_groups, get_items, get_item_algorithm_metrics, get_leaderboard, update_item_misc_gongpin } from './db';
+import { increment_item_window, get_item_with_stats, get_groups, get_items, get_item_algorithm_metrics, get_leaderboard, update_item_misc_gongpin, create_group, create_item, get_group_by_title } from './db';
 import { SHOP_ITEMS } from '../lib/constants';
 
 export default {
@@ -50,6 +50,11 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     return handleGetItems(request, env);
   }
 
+  // 创建 item (包含自动创建 group 逻辑)
+  if (path === '/api/items' && request.method === 'POST') {
+    return handleCreateItem(request, env);
+  }
+
   // 获取排行榜
   if (path === '/api/leaderboard' && request.method === 'GET') {
     return handleGetLeaderboard(request, env);
@@ -64,6 +69,27 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 } as const;
+
+/**
+ * 上传图片到 R2
+ */
+async function uploadImageToR2(env: Env, file: File): Promise<string> {
+  // 生成唯一文件名
+  const timestamp = Date.now();
+  const randomStr = Math.random().toString(36).substring(2, 15);
+  const ext = file.name.split('.').pop() || 'jpg';
+  const fileName = `memorial/${timestamp}-${randomStr}.${ext}`;
+
+  // 上传到 R2
+  await env.R2.put(fileName, file.stream(), {
+    httpMetadata: {
+      contentType: file.type,
+    },
+  });
+
+  // 返回公开 URL
+  return `https://bucket.permane.world/${fileName}`;
+}
 
 /**
  * 处理滑动窗口增量 API
@@ -263,6 +289,113 @@ async function handleGetItems(request: Request, env: Env): Promise<Response> {
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
+}
+
+/**
+ * 处理创建 item API (智能创建 Group + 图片上传)
+ * POST /api/items
+ * Content-Type: multipart/form-data
+ * FormData: { 
+ *   group_name: string;
+ *   title: string; 
+ *   description?: string; 
+ *   misc?: string (JSON);
+ *   coverImage?: File
+ * }
+ */
+async function handleCreateItem(request: Request, env: Env): Promise<Response> {
+    try {
+        const contentType = request.headers.get('content-type') || '';
+        
+        let group_name: string;
+        let title: string;
+        let description: string = '';
+        let misc: any = {};
+        let coverImageUrl: string | undefined;
+
+        if (contentType.includes('multipart/form-data')) {
+            // 处理 FormData
+            const formData = await request.formData();
+            
+            group_name = formData.get('group_name') as string;
+            title = formData.get('title') as string;
+            description = (formData.get('description') as string) || '';
+            
+            const miscStr = formData.get('misc') as string;
+            if (miscStr) {
+                try {
+                    misc = JSON.parse(miscStr);
+                } catch (e) {
+                    console.error('Failed to parse misc:', e);
+                }
+            }
+
+            // 处理图片上传
+            const coverImageFile = formData.get('coverImage') as File | null;
+            if (coverImageFile && coverImageFile.size > 0) {
+                try {
+                    coverImageUrl = await uploadImageToR2(env, coverImageFile);
+                    console.log('Image uploaded to R2:', coverImageUrl);
+                } catch (e) {
+                    console.error('Failed to upload image to R2:', e);
+                    // 继续创建，只是没有图片
+                }
+            }
+        } else {
+            // 兼容 JSON 格式（向后兼容）
+            const body = await request.json<{ 
+                group_name: string; 
+                title: string; 
+                description?: string; 
+                misc?: any 
+            }>();
+            
+            group_name = body.group_name;
+            title = body.title;
+            description = body.description || '';
+            misc = body.misc || {};
+        }
+
+        if (!group_name || !title) {
+             return new Response(
+                JSON.stringify({ error: 'INVALID_PARAMS', message: 'group_name and title are required' }), 
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+             );
+        }
+
+        // 1. 检查 Group 是否存在
+        let group = await get_group_by_title(env.DB, group_name);
+        let group_id: number;
+
+        if (group) {
+            group_id = group.id;
+        } else {
+            // 2. 如果不存在，创建新 Group
+            group_id = await create_group(env.DB, group_name, `Category for ${group_name}`, { auto_created: true });
+        }
+
+        // 3. 如果有上传的图片，添加到 misc 中
+        if (coverImageUrl) {
+            misc.coverImage = coverImageUrl;
+        }
+
+        // 4. 创建 Item
+        const id = await create_item(env.DB, group_id, title, description, misc);
+        
+        // 5. 初始化一个热度窗口
+        await increment_item_window(env.DB, id, 1);
+
+        return new Response(
+            JSON.stringify({ success: true, id, group_id, coverImageUrl }), 
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+    } catch (e) {
+        console.error('Error in handleCreateItem:', e);
+         return new Response(
+            JSON.stringify({ error: 'INTERNAL_ERROR', message: String(e) }), 
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+         );
+    }
 }
 
 /**

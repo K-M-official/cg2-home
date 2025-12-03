@@ -13,6 +13,33 @@ export async function get_groups(db: D1Database): Promise<ItemGroup[]> {
 }
 
 /**
+ * 根据标题获取 group
+ */
+export async function get_group_by_title(db: D1Database, title: string): Promise<ItemGroup | null> {
+    return await db.prepare(`
+        SELECT * FROM item_groups WHERE title = ?
+    `).bind(title).first<ItemGroup>();
+}
+
+/**
+ * 创建一个新的 group (category)
+ */
+export async function create_group(
+    db: D1Database,
+    title: string,
+    description: string = '',
+    misc: any = {}
+): Promise<number> {
+    const now = new Date().toISOString();
+    const result = await db.prepare(`
+        INSERT INTO item_groups (title, description, misc, created_at)
+        VALUES (?, ?, ?, ?)
+    `).bind(title, description, JSON.stringify(misc), now).run();
+
+    return result.meta.last_row_id as number;
+}
+
+/**
  * 获取 items
  * 如果 group_id 为 null，则获取所有 items
  * 否则获取指定 group 的 items
@@ -32,6 +59,25 @@ export async function get_items(db: D1Database, group_id: number | null = null):
     const items = await stmt.all<Item>();
     
     return items.results;
+}
+
+/**
+ * 创建一个新的 item
+ */
+export async function create_item(
+    db: D1Database,
+    group_id: number,
+    title: string,
+    description: string = '',
+    misc: any = {}
+): Promise<number> {
+    const now = new Date().toISOString();
+    const result = await db.prepare(`
+        INSERT INTO items (group_id, title, description, misc, created_at)
+        VALUES (?, ?, ?, ?, ?)
+    `).bind(group_id, title, description, JSON.stringify(misc), now).run();
+
+    return result.meta.last_row_id as number;
 }
 
 /**

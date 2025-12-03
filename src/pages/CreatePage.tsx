@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CreateStep } from '../types';
 import { Button } from '../components/UI';
 import { useNavigate } from 'react-router-dom';
@@ -8,26 +8,125 @@ export const CreatePage: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState<CreateStep>(CreateStep.BASIC_INFO);
   const [loading, setLoading] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  
+  // State for relationship options
+  const [relationshipOptions, setRelationshipOptions] = useState<string[]>([]);
+  const [isOtherRelationship, setIsOtherRelationship] = useState(false);
+  const [customRelationship, setCustomRelationship] = useState('');
+  const [loadingGroups, setLoadingGroups] = useState(true);
+  
+  // Image upload state
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
     name: '',
     dates: '',
-    relationship: 'Family',
+    relationship: '',
     keywords: '',
     description: '',
     theme: 'modern',
     type: 'private' // Default to Cloud Memorial
   });
 
-  const handleNext = () => {
+  // Load existing groups (categories) from backend
+  useEffect(() => {
+    const fetchGroups = async () => {
+        try {
+            const res = await fetch('/api/groups');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.groups && Array.isArray(data.groups)) {
+                    const titles = data.groups.map((g: any) => g.title);
+                    setRelationshipOptions(titles);
+                    // Set first option as default if available
+                    if (titles.length > 0 && !formData.relationship) {
+                        setFormData(prev => ({ ...prev, relationship: titles[0] }));
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Failed to fetch groups', e);
+        } finally {
+            setLoadingGroups(false);
+        }
+    };
+    fetchGroups();
+  }, []);
+
+  const handleRelationshipChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const val = e.target.value;
+      if (val === 'Other') {
+          setIsOtherRelationship(true);
+          setFormData({ ...formData, relationship: '' }); // Clear for custom input
+      } else {
+          setIsOtherRelationship(false);
+          setFormData({ ...formData, relationship: val });
+      }
+  };
+
+  const handleNext = async () => {
     if (step < CreateStep.BADGE) {
       setStep(prev => prev + 1);
     } else {
-      // Finalize
+      // Finalize and Create
       setLoading(true);
-      setTimeout(() => navigate('/memorial/1'), 1500); // Mock redirect
+      
+      const relationshipToSubmit = isOtherRelationship ? customRelationship : formData.relationship;
+
+      if (!formData.name) {
+          alert("Please enter a name.");
+          setLoading(false);
+          return;
+      }
+      if (!relationshipToSubmit) {
+          alert("Please specify a relationship.");
+          setLoading(false);
+          return;
+      }
+
+      try {
+          // 使用 FormData 上传图片
+          const formDataToSend = new FormData();
+          formDataToSend.append('group_name', relationshipToSubmit);
+          formDataToSend.append('title', formData.name);
+          formDataToSend.append('description', formData.description || `Memorial for ${formData.name}`);
+          
+          const miscData = {
+              ...formData,
+              relationship: relationshipToSubmit
+          };
+          formDataToSend.append('misc', JSON.stringify(miscData));
+
+          // 如果有图片文件，添加到 FormData
+          if (coverImageFile) {
+              formDataToSend.append('coverImage', coverImageFile);
+          }
+
+          const res = await fetch('/api/items', {
+              method: 'POST',
+              body: formDataToSend
+              // 不设置 Content-Type，让浏览器自动设置 multipart/form-data 边界
+          });
+
+          if (!res.ok) {
+              const err = await res.json();
+              throw new Error(err.message || 'Failed to create memorial');
+          }
+
+          const data = await res.json();
+          // Assuming backend returns { success: true, id: number }
+          // Redirect to the new memorial page (mock ID for now if needed, or use real one)
+          // In real app, we might need to wait for indexing or just go to gallery/leaderboard
+          
+          setTimeout(() => navigate('/memorial/' + data.id), 1500); 
+
+      } catch (error: any) {
+          console.error("Creation failed", error);
+          alert("Failed to create memorial: " + error.message);
+          setLoading(false);
+      }
     }
   };
 
@@ -67,14 +166,36 @@ export const CreatePage: React.FC = () => {
               <label className="block">
                 <span className="text-slate-500 text-sm mb-1 block">Relationship Category</span>
                 <select 
-                  className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all text-slate-900"
-                  value={formData.relationship}
-                  onChange={e => setFormData({...formData, relationship: e.target.value})}
+                  className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all text-slate-900 mb-2"
+                  value={isOtherRelationship ? 'Other' : formData.relationship}
+                  onChange={handleRelationshipChange}
+                  disabled={loadingGroups}
                 >
-                  <option value="Family">Family Member</option>
-                  <option value="Pet">Pet</option>
-                  <option value="Friend">Friend</option>
+                  {loadingGroups ? (
+                      <option value="">Loading categories...</option>
+                  ) : (
+                      <>
+                        {relationshipOptions.length === 0 && (
+                            <option value="">No categories yet</option>
+                        )}
+                        {relationshipOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                        <option value="Other">+ Create New Category</option>
+                      </>
+                  )}
                 </select>
+                
+                {isOtherRelationship && (
+                    <input 
+                        type="text"
+                        className="w-full px-4 py-3 rounded-lg bg-white border border-indigo-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-all text-slate-900 animate-fade-in"
+                        placeholder="Enter new category (e.g. Mentor, Hero)"
+                        value={customRelationship}
+                        onChange={e => setCustomRelationship(e.target.value)}
+                        autoFocus
+                    />
+                )}
               </label>
             </div>
           </div>
@@ -136,11 +257,55 @@ export const CreatePage: React.FC = () => {
                 ></textarea>
              </div>
 
-             <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:bg-slate-50 transition-colors cursor-pointer group">
-               <Upload className="w-8 h-8 mx-auto text-slate-300 group-hover:text-slate-500 mb-2 transition-colors" />
-               <p className="text-sm text-slate-500">Upload Cover Photo</p>
-               <input type="file" className="hidden" />
-             </div>
+             {coverImage ? (
+               <div className="relative border-2 border-slate-200 rounded-xl overflow-hidden group">
+                 <img src={coverImage} alt="Cover preview" className="w-full h-48 object-cover" />
+                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                   <button
+                     onClick={() => document.getElementById('cover-photo-input')?.click()}
+                     className="px-4 py-2 bg-white text-slate-800 rounded-lg text-sm hover:bg-slate-100 transition-colors"
+                   >
+                     Change Photo
+                   </button>
+                   <button
+                     onClick={() => {
+                       setCoverImage(null);
+                       setCoverImageFile(null);
+                     }}
+                     className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
+                   >
+                     Remove
+                   </button>
+                 </div>
+               </div>
+             ) : (
+               <div 
+                 className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:bg-slate-50 transition-colors cursor-pointer group"
+                 onClick={() => document.getElementById('cover-photo-input')?.click()}
+               >
+                 <Upload className="w-8 h-8 mx-auto text-slate-300 group-hover:text-slate-500 mb-2 transition-colors" />
+                 <p className="text-sm text-slate-500">Upload Cover Photo</p>
+                 <p className="text-xs text-slate-400 mt-1">Click to select an image</p>
+               </div>
+             )}
+             <input 
+               id="cover-photo-input"
+               type="file" 
+               accept="image/*"
+               className="hidden"
+               onChange={(e) => {
+                 const file = e.target.files?.[0];
+                 if (file) {
+                   setCoverImageFile(file);
+                   // 创建预览 URL
+                   const reader = new FileReader();
+                   reader.onloadend = () => {
+                     setCoverImage(reader.result as string);
+                   };
+                   reader.readAsDataURL(file);
+                 }
+               }}
+             />
           </div>
         );
       case CreateStep.BADGE:
