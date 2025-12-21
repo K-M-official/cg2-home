@@ -23,7 +23,7 @@
 	"r2_buckets": [
 		{
 			"binding": "R2",
-			"bucket_name": "cg2",
+			"bucket_name": "cg2"
 		}
 	],
 	/**
