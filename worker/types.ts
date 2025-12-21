@@ -22,3 +22,19 @@ export type ItemHeatRecordWindow = {
     created_at: number;
     expired_at: number;
 }
+
+export type User = {
+    id: number;
+    email: string;
+    password_hash: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export type EmailVerificationCode = {
+    id: number;
+    email: string;
+    code: string;
+    expires_at: number;
+    created_at: number;
+}

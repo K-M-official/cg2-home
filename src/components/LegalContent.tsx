@@ -18,7 +18,7 @@ export const PrivacyContent: React.FC = () => {
         We may collect, use, store and transfer different kinds of personal data about you which we have grouped together follows:
       </p>
       <ul>
-        <li><strong className="text-slate-800">Identity Data</strong> includes wallet addresses and usernames.</li>
+        <li><strong className="text-slate-800">Identity Data</strong> includes email addresses and usernames.</li>
         <li><strong className="text-slate-800">Memorial Data</strong> includes information, images, and stories you upload to create memorials.</li>
         <li><strong className="text-slate-800">Usage Data</strong> includes information about how you use our website and services.</li>
       </ul>
@@ -34,20 +34,13 @@ export const PrivacyContent: React.FC = () => {
         <li>To maintain the security of our platform.</li>
       </ul>
 
-      <h3 className="text-slate-800">4. Blockchain Data</h3>
-      <p>
-        Please note that any data you choose to store on the blockchain (including memorial details and transactions) is public, 
-        immutable, and cannot be deleted or altered by us. By using our blockchain features, you acknowledge and consent to this 
-        public availability.
-      </p>
-
-      <h3 className="text-slate-800">5. Data Security</h3>
+      <h3 className="text-slate-800">4. Data Security</h3>
       <p>
         We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used, 
         or accessed in an unauthorized way, altered, or disclosed.
       </p>
 
-      <h3 className="text-slate-800">6. Contact Us</h3>
+      <h3 className="text-slate-800">5. Contact Us</h3>
       <p>
         If you have any questions about this privacy policy or our privacy practices, please contact us at support@kmera.io.
       </p>
@@ -73,26 +66,20 @@ export const TermsContent: React.FC = () => {
         Content on the services may be protected by others' intellectual property rights. Please do not copy, upload, download, 
         or share content unless you have the right to do so.
       </p>
-      
-      <h3 className="text-slate-800">3. Blockchain Transactions</h3>
-      <p>
-        K&M ERA interacts with the Solana blockchain. We do not control the blockchain and cannot reverse transactions or 
-        recover lost keys. You are solely responsible for managing your wallet and cryptographic keys.
-      </p>
 
-      <h3 className="text-slate-800">4. Content Guidelines</h3>
+      <h3 className="text-slate-800">3. Content Guidelines</h3>
       <p>
         We strive to maintain a respectful environment for memorializing loved ones. We reserve the right to remove any content 
         that is offensive, illegal, or violates the rights of others.
       </p>
 
-      <h3 className="text-slate-800">5. Disclaimer of Warranties</h3>
+      <h3 className="text-slate-800">4. Disclaimer of Warranties</h3>
       <p>
         Our services are provided "as is." K&M ERA and its suppliers and licensors hereby disclaim all warranties of any kind, 
         express or implied, including, without limitation, the warranties of merchantability, fitness for a particular purpose and non-infringement.
       </p>
 
-      <h3 className="text-slate-800">6. Limitation of Liability</h3>
+      <h3 className="text-slate-800">5. Limitation of Liability</h3>
       <p>
         In no event will K&M ERA, or its suppliers or licensors, be liable with respect to any subject matter of this agreement 
         under any contract, negligence, strict liability or other legal or equitable theory for: (i) any special, incidental or 

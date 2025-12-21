@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Wallet } from 'lucide-react';
+import { Menu, X, User, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LOGO from './LOGO';
-import { usePhantomWallet } from './hooks/usePhantomWallet';
+import { useAuth } from './context/AuthContext';
 
 const Layout: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -11,18 +11,11 @@ const Layout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Phantom钱包集成
-  const { 
-    walletAddress, 
-    isConnecting, 
-    error, 
-    connectWallet, 
-    disconnectWallet, 
-    formatAddress 
-  } = usePhantomWallet();
+  // 认证系统集成
+  const { user, isAuthenticated, logout } = useAuth();
   
   // Check if we are on a dark themed page
-  const isDarkPage = location.pathname === '/' || location.pathname === '/heritage';
+  const isDarkPage = location.pathname === '/' || location.pathname === '/heritage' || location.pathname === '/auth';
 
   // Scroll detection
   useEffect(() => {
@@ -82,42 +75,28 @@ const Layout: React.FC = () => {
                  {link.name}
                </button>
              ))}
-             {walletAddress ? (
+             {isAuthenticated && user ? (
                <div className="flex items-center gap-3">
                  <div className={`px-4 py-2 rounded-full border text-xs uppercase tracking-widest ${borderColorClass} ${textColorClass} flex items-center gap-2`}>
-                   <Wallet size={14} />
-                   {formatAddress}
+                   <User size={14} />
+                   {user.email.split('@')[0]}
                  </div>
                  <button 
-                   onClick={disconnectWallet}
-                   className={`px-4 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all ${borderColorClass} ${textColorClass}`}
+                   onClick={logout}
+                   className={`px-4 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center gap-2 ${borderColorClass} ${textColorClass}`}
                  >
-                   断开
+                   <LogOut size={14} />
+                   登出
                  </button>
                </div>
              ) : (
                <button 
-                 onClick={connectWallet}
-                 disabled={isConnecting}
-                 className={`px-5 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-white hover:text-slate-900 transition-all flex items-center gap-2 ${borderColorClass} ${textColorClass} disabled:opacity-50 disabled:cursor-not-allowed`}
+                 onClick={() => navigate('/auth')}
+                 className={`px-5 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-white hover:text-slate-900 transition-all flex items-center gap-2 ${borderColorClass} ${textColorClass}`}
                >
-                 {isConnecting ? (
-                   <>
-                     <span className="animate-spin">⟳</span>
-                     连接中...
-                   </>
-                 ) : (
-                   <>
-                     <Wallet size={14} />
-                     Connect Wallet
-                   </>
-                 )}
+                 <User size={14} />
+                 登录/注册
                </button>
-             )}
-             {error && (
-               <div className="absolute top-full mt-2 right-0 bg-red-500 text-white text-xs px-4 py-2 rounded shadow-lg">
-                 {error}
-               </div>
              )}
           </div>
 
@@ -146,37 +125,28 @@ const Layout: React.FC = () => {
                         </button>
                     ))}
                     
-                    {/* 移动端钱包按钮 */}
-                    {walletAddress ? (
+                    {/* 移动端认证按钮 */}
+                    {isAuthenticated && user ? (
                       <div className="flex flex-col items-center gap-4 mt-4">
                         <div className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest flex items-center gap-2">
-                          <Wallet size={14} />
-                          {formatAddress}
+                          <User size={14} />
+                          {user.email.split('@')[0]}
                         </div>
                         <button 
-                          onClick={disconnectWallet}
-                          className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
+                          onClick={logout}
+                          className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center gap-2"
                         >
-                          断开连接
+                          <LogOut size={14} />
+                          登出
                         </button>
                       </div>
                     ) : (
                       <button 
-                        onClick={connectWallet}
-                        disabled={isConnecting}
-                        className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest hover:bg-slate-800 hover:text-white transition-all flex items-center gap-2 mt-4 disabled:opacity-50"
+                        onClick={() => navigate('/auth')}
+                        className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest hover:bg-slate-800 hover:text-white transition-all flex items-center gap-2 mt-4"
                       >
-                        {isConnecting ? (
-                          <>
-                            <span className="animate-spin">⟳</span>
-                            连接中...
-                          </>
-                        ) : (
-                          <>
-                            <Wallet size={14} />
-                            Connect Wallet
-                          </>
-                        )}
+                        <User size={14} />
+                        登录/注册
                       </button>
                     )}
                 </motion.div>

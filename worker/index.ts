@@ -1,5 +1,6 @@
 import { increment_item_window, get_item_with_stats, get_groups, get_items, get_item_algorithm_metrics, get_leaderboard, update_item_misc_gongpin, create_group, create_item, get_group_by_title } from './db';
 import { SHOP_ITEMS } from '../lib/constants';
+import { handleRegister, handleLogin, handleForgotPassword, handleResetPassword, handleVerifyToken, handleSendCode } from './auth';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -58,6 +59,38 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
   // 获取排行榜
   if (path === '/api/leaderboard' && request.method === 'GET') {
     return handleGetLeaderboard(request, env);
+  }
+
+  // ===== 认证相关API =====
+  
+  // 发送验证码
+  if (path === '/api/auth/send-code' && request.method === 'POST') {
+    return handleSendCode(request, env);
+  }
+
+  // 用户注册
+  if (path === '/api/auth/register' && request.method === 'POST') {
+    return handleRegister(request, env);
+  }
+
+  // 用户登录
+  if (path === '/api/auth/login' && request.method === 'POST') {
+    return handleLogin(request, env);
+  }
+
+  // 请求密码重置
+  if (path === '/api/auth/forgot-password' && request.method === 'POST') {
+    return handleForgotPassword(request, env);
+  }
+
+  // 重置密码
+  if (path === '/api/auth/reset-password' && request.method === 'POST') {
+    return handleResetPassword(request, env);
+  }
+
+  // 验证JWT令牌
+  if (path === '/api/auth/verify' && request.method === 'GET') {
+    return handleVerifyToken(request, env);
   }
 
   return new Response(JSON.stringify({ error: 'NOT_FOUND' }), { status: 404, headers: corsHeaders });

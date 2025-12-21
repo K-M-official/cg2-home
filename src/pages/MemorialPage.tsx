@@ -3,13 +3,11 @@ import { useParams } from 'react-router-dom';
 import { Candle } from '../components/Candle';
 import { Button } from '../components/UI';
 import { Hexagon, Share2, Shield, Globe, Flower2, Bone, Heart } from 'lucide-react';
-import { usePhantomWallet } from '../hooks/usePhantomWallet';
 import { VirtualShop } from '../components/VirtualShop';
 import { useGallery } from '../context/GalleryContext';
 
 const MemorialPage: React.FC = () => {
   const { id } = useParams();
-  const { walletAddress, connectWallet } = usePhantomWallet();
   const { currentMemorial, loadingMemorial, fetchMemorial, offerTribute } = useGallery();
   
   const [activeTab, setActiveTab] = useState<'timeline' | 'gallery' | 'tributes'>('gallery');
@@ -33,10 +31,8 @@ const MemorialPage: React.FC = () => {
   };
 
   const handlePurchase = async (item: any) => {
-      if (!walletAddress) {
-          try { await connectWallet(); } catch (e) { console.error(e); }
-          return;
-      }
+      // TODO: Implement authentication check before purchase
+      // User should be logged in to make purchases
 
       if (id && currentMemorial) {
           const result = await offerTribute(id, item.id);
@@ -62,13 +58,11 @@ const MemorialPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900">
-      <VirtualShop 
-        isOpen={isShopOpen} 
-        onClose={() => setIsShopOpen(false)} 
-        onPurchase={handlePurchase} 
+      <VirtualShop
+        isOpen={isShopOpen}
+        onClose={() => setIsShopOpen(false)}
+        onPurchase={handlePurchase}
         memorialType={memorial.type}
-        walletAddress={walletAddress}
-        connectWallet={connectWallet}
       />
 
       {/* Immersive Header */}
@@ -105,9 +99,6 @@ const MemorialPage: React.FC = () => {
            <div className="md:w-1/2 text-center md:text-left">
              <div className="flex justify-center md:justify-between items-baseline mb-2">
                <h3 className="text-lg font-serif text-slate-800">Biography</h3>
-               {memorial.onChainHash && (
-                 <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-1 rounded font-mono hidden md:inline-block">On-Chain</span>
-               )}
              </div>
              <p className="text-slate-600 font-light leading-relaxed mb-4 line-clamp-4">
                {memorial.bio}
