@@ -7,13 +7,6 @@ const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { leaderboard, loading } = useLeaderboard(3);
 
-  // Helper for generating random meteors
-  const meteors = Array.from({ length: 15 }).map((_, i) => ({
-    left: Math.random() * 100,
-    delay: Math.random() * 5,
-    duration: Math.random() * 3 + 2
-  }));
-
   const scrollToNext = () => {
     const nextSection = document.getElementById('cloud-memorial');
     if (nextSection) nextSection.scrollIntoView({ behavior: 'smooth' });
@@ -54,28 +47,7 @@ const HomePage: React.FC = () => {
     <div className="w-full relative overflow-x-hidden">
       
       {/* 1. HERO SECTION */}
-      <section className="relative h-screen w-full bg-[#0F172A] overflow-hidden flex flex-col items-center justify-center text-center px-6">
-        
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0F172A] via-[#1E293B] to-[#0F172A]"></div>
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30"></div>
-        
-        {/* Meteors */}
-        {meteors.map((m, i) => (
-          <span
-            key={i}
-            className="absolute top-0 h-0.5 w-0.5 rounded-full bg-white shadow-[0_0_0_1px_#ffffff10] animate-meteor"
-            style={{
-              left: `${m.left}%`,
-              animationDelay: `${m.delay}s`,
-              animationDuration: `${m.duration}s`,
-              top: '-10px',
-            }}
-          >
-            <div className="pointer-events-none absolute top-1/2 -z-10 h-[1px] w-[50px] -translate-y-1/2 bg-gradient-to-r from-transparent to-white" />
-          </span>
-        ))}
-
+      <section className="relative h-screen w-full overflow-hidden flex flex-col items-center justify-center text-center px-6">
         {/* Content */}
         <div className="relative z-20 max-w-5xl mx-auto flex flex-col items-center">
            <h1 className="text-5xl md:text-8xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-slate-400 mb-8 leading-tight tracking-tight animate-fade-in opacity-0" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>

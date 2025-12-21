@@ -4,18 +4,23 @@ import { Menu, X, User, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LOGO from './LOGO';
 import { useAuth } from './context/AuthContext';
+import { useUI } from './context/UIContext';
+import { StarryBackground } from './components/StarryBackground';
 
 const Layout: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // 认证系统集成
   const { user, isAuthenticated, logout } = useAuth();
-  
+
+  // UI 控制
+  const { navbarVisible } = useUI();
+
   // Check if we are on a dark themed page
-  const isDarkPage = location.pathname === '/' || location.pathname === '/heritage' || location.pathname === '/auth';
+  const isDarkPage = location.pathname === '/' || location.pathname === '/heritage' || location.pathname === '/auth' || location.pathname === '/profile';
 
   // Scroll detection
   useEffect(() => {
@@ -53,12 +58,15 @@ const Layout: React.FC = () => {
   const borderColorClass = getNavBorderColor();
 
   return (
-    <div className="flex flex-col min-h-screen font-sans">
-      
-      {/* Navbar */}
-      <nav 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-md py-4 shadow-sm' : 'bg-transparent py-6'}`}
-      >
+    <div className="flex flex-col min-h-screen font-sans relative">
+      {/* 星空背景 - 全局常驻 */}
+      {isDarkPage && <StarryBackground />}
+
+      {/* Navbar - 根据 navbarVisible 控制显示 */}
+      {navbarVisible && (
+        <nav
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-md py-4 shadow-sm' : 'bg-transparent py-6'}`}
+        >
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
           <div className={`cursor-pointer z-50 ${textColorClass} ${isDarkPage ? 'invert' : ''}`} onClick={() => navigate('/')}>
             <LOGO />
@@ -77,25 +85,28 @@ const Layout: React.FC = () => {
              ))}
              {isAuthenticated && user ? (
                <div className="flex items-center gap-3">
-                 <div className={`px-4 py-2 rounded-full border text-xs uppercase tracking-widest ${borderColorClass} ${textColorClass} flex items-center gap-2`}>
+                 <button
+                   onClick={() => navigate('/profile')}
+                   className={`px-4 py-2 rounded-full border text-xs uppercase tracking-widest ${borderColorClass} ${textColorClass} flex items-center gap-2 hover:bg-white/10 transition-all`}
+                 >
                    <User size={14} />
                    {user.email.split('@')[0]}
-                 </div>
-                 <button 
+                 </button>
+                 <button
                    onClick={logout}
                    className={`px-4 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center gap-2 ${borderColorClass} ${textColorClass}`}
                  >
                    <LogOut size={14} />
-                   登出
+                   Logout
                  </button>
                </div>
              ) : (
-               <button 
+               <button
                  onClick={() => navigate('/auth')}
                  className={`px-5 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-white hover:text-slate-900 transition-all flex items-center gap-2 ${borderColorClass} ${textColorClass}`}
                >
                  <User size={14} />
-                 登录/注册
+                 Login / Register
                </button>
              )}
           </div>
@@ -128,34 +139,38 @@ const Layout: React.FC = () => {
                     {/* 移动端认证按钮 */}
                     {isAuthenticated && user ? (
                       <div className="flex flex-col items-center gap-4 mt-4">
-                        <div className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest flex items-center gap-2">
+                        <button
+                          onClick={() => navigate('/profile')}
+                          className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest flex items-center gap-2"
+                        >
                           <User size={14} />
                           {user.email.split('@')[0]}
-                        </div>
-                        <button 
+                        </button>
+                        <button
                           onClick={logout}
                           className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center gap-2"
                         >
                           <LogOut size={14} />
-                          登出
+                          Logout
                         </button>
                       </div>
                     ) : (
-                      <button 
+                      <button
                         onClick={() => navigate('/auth')}
                         className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest hover:bg-slate-800 hover:text-white transition-all flex items-center gap-2 mt-4"
                       >
                         <User size={14} />
-                        登录/注册
+                        Login / Register
                       </button>
                     )}
                 </motion.div>
             )}
         </AnimatePresence>
-      </nav>
+        </nav>
+      )}
 
       {/* Main Content */}
-      <main className="flex-grow">
+      <main className="flex-grow relative z-10">
         <Outlet />
       </main>
 

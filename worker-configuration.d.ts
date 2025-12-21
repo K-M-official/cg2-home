@@ -10,6 +10,7 @@ declare namespace Cloudflare {
         R2: R2Bucket;
         JWT_SECRET: string;
         RESEND_API_KEY: string;
+        DEV?: boolean;
 	}
 }
 interface Env extends Cloudflare.Env {}

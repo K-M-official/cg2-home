@@ -1,6 +1,14 @@
-import { increment_item_window, get_item_with_stats, get_groups, get_items, get_item_algorithm_metrics, get_leaderboard, update_item_misc_gongpin, create_group, create_item, get_group_by_title } from './db';
-import { SHOP_ITEMS } from '../lib/constants';
-import { handleRegister, handleLogin, handleForgotPassword, handleResetPassword, handleVerifyToken, handleSendCode } from './auth';
+import { handleAuthRoutes } from './handlers/auth';
+import { handleUserRoutes } from './handlers/user';
+import { handleAdminRoutes } from './handlers/admin';
+import { handleItemRoutes } from './handlers/items';
+import { handleContentRoutes } from './handlers/content';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+} as const;
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -8,476 +16,141 @@ export default {
     const pathname = url.pathname;
     const method = request.method;
 
+    // CORS 预检
     if (method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
     // API 路由处理
     if (pathname.startsWith('/api/')) {
-      return await handleApi(request, env);
+      return await handleApi(request, env, pathname);
     }
 
-    return new Response(JSON.stringify({ error: 'NOT_FOUND' }), { status: 404, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: 'NOT_FOUND' }), {
+      status: 404,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   },
 } satisfies ExportedHandler<Env>;
 
-// ---- API ----
-async function handleApi(request: Request, env: Env): Promise<Response> {
-  const url = new URL(request.url);
-  const path = url.pathname;
-
-  // CORS 预检
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
-  }
-
-  // 增加 item 的滑动窗口计数
-  if (path === '/api/item/increment' && request.method === 'POST') {
-    return handleIncrement(request, env);
-  }
-
-  // 获取 item 的统计信息
-  if (path === '/api/item/stats' && request.method === 'GET') {
-    return handleItemStats(request, env);
-  }
-
-  // 获取所有 groups
-  if (path === '/api/groups' && request.method === 'GET') {
-    return handleGetGroups(request, env);
-  }
-
-  // 获取指定 group 的 items
-  if (path === '/api/items' && request.method === 'GET') {
-    return handleGetItems(request, env);
-  }
-
-  // 创建 item (包含自动创建 group 逻辑)
-  if (path === '/api/items' && request.method === 'POST') {
-    return handleCreateItem(request, env);
-  }
-
-  // 获取排行榜
-  if (path === '/api/leaderboard' && request.method === 'GET') {
-    return handleGetLeaderboard(request, env);
-  }
-
-  // ===== 认证相关API =====
-  
-  // 发送验证码
-  if (path === '/api/auth/send-code' && request.method === 'POST') {
-    return handleSendCode(request, env);
-  }
-
-  // 用户注册
-  if (path === '/api/auth/register' && request.method === 'POST') {
-    return handleRegister(request, env);
-  }
-
-  // 用户登录
-  if (path === '/api/auth/login' && request.method === 'POST') {
-    return handleLogin(request, env);
-  }
-
-  // 请求密码重置
-  if (path === '/api/auth/forgot-password' && request.method === 'POST') {
-    return handleForgotPassword(request, env);
-  }
-
-  // 重置密码
-  if (path === '/api/auth/reset-password' && request.method === 'POST') {
-    return handleResetPassword(request, env);
-  }
-
-  // 验证JWT令牌
-  if (path === '/api/auth/verify' && request.method === 'GET') {
-    return handleVerifyToken(request, env);
-  }
-
-  return new Response(JSON.stringify({ error: 'NOT_FOUND' }), { status: 404, headers: corsHeaders });
-}
-
-// ---- Utils ----
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-} as const;
-
 /**
- * 上传图片到 R2
+ * API 路由分发
+ * 使用 path.startsWith() 进行层级过滤，然后分发到对应的 handler
  */
-async function uploadImageToR2(env: Env, file: File): Promise<string> {
-  // 生成唯一文件名
-  const timestamp = Date.now();
-  const randomStr = Math.random().toString(36).substring(2, 15);
-  const ext = file.name.split('.').pop() || 'jpg';
-  const fileName = `memorial/${timestamp}-${randomStr}.${ext}`;
+async function handleApi(request: Request, env: Env, path: string): Promise<Response> {
+  // 认证相关路由: /api/auth/*
+  if (path.startsWith('/api/auth/')) {
+    const response = await handleAuthRoutes(request, env, path);
+    if (response) return response;
+  }
 
-  // 上传到 R2
-  await env.R2.put(fileName, file.stream(), {
-    httpMetadata: {
-      contentType: file.type,
-    },
+  // 用户相关路由: /api/user/*
+  if (path.startsWith('/api/user/')) {
+    const response = await handleUserRoutes(request, env, path);
+    if (response) return response;
+  }
+
+  // 管理员相关路由: /api/admin/*
+  if (path.startsWith('/api/admin/')) {
+    const response = await handleAdminRoutes(request, env, path);
+    if (response) return response;
+  }
+
+  // 内容提交相关路由: /api/content/*
+  if (path.startsWith('/api/content/')) {
+    const response = await handleContentRoutes(request, env, path);
+    if (response) return response;
+  }
+
+  // 纪念对象相关路由: /api/item/*, /api/items/*, /api/groups/*, /api/leaderboard/*
+  if (path.startsWith('/api/item/') ||
+      path.startsWith('/api/items') ||
+      path.startsWith('/api/groups') ||
+      path.startsWith('/api/leaderboard')) {
+    const response = await handleItemRoutes(request, env, path);
+    if (response) return response;
+  }
+
+  // Debug 模式专属路由: /api/debug/*
+  if (env.DEV && path.startsWith('/api/debug/')) {
+    return await handleDebugRoutes(request, env, path);
+  }
+
+  // 未找到匹配的路由
+  return new Response(JSON.stringify({ error: 'NOT_FOUND' }), {
+    status: 404,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   });
-
-  // 返回公开 URL
-  return `https://bucket.permane.world/${fileName}`;
 }
 
 /**
- * 处理滑动窗口增量 API
- * POST /api/item/increment
- * Body: { item_id: number, delta?: number }
+ * Debug 模式专属路由处理
+ * /api/debug/*
  */
-async function handleIncrement(request: Request, env: Env): Promise<Response> {
-  try {
-    const body = await request.json<{ item_id?: number; delta?: number; tribute_id?: string }>();
-    
-    const item_id = body.item_id;
-    let delta = body.delta ?? 0;
-    const tribute_id = body.tribute_id;
-    
-    // 参数验证
-    if (item_id === undefined || item_id === null || !Number.isInteger(item_id) || item_id <= 0) {
-      return new Response(
-        JSON.stringify({ error: 'INVALID_PARAMS', message: 'item_id must be a positive integer' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    if (tribute_id) {
-        // Validate and get delta from SHOP_ITEMS
-        const tribute = SHOP_ITEMS.find(item => item.id === tribute_id);
-        if (!tribute) {
-             return new Response(JSON.stringify({ error: 'Invalid tribute_id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        }
-        delta = tribute.delta || 1; // Default to 1 if not set
-
-        // Update gongpin in misc field
-        await update_item_misc_gongpin(env.DB, item_id, tribute_id, 1);
-    } else if (delta === 0) {
-         // Neither tribute_id nor valid delta provided (allow delta > 0 for manual testing if needed)
-         return new Response(
-            JSON.stringify({ error: 'INVALID_PARAMS', message: 'tribute_id or delta > 0 is required' }), 
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-    } else if (typeof delta !== 'number' || !Number.isFinite(delta)) {
-      return new Response(
-        JSON.stringify({ error: 'INVALID_PARAMS', message: 'delta must be a valid number' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    // 执行增量操作
-    await increment_item_window(env.DB, item_id, delta);
-    
-    // 计算最新的 M 和 P
-    const { M, P } = await get_item_algorithm_metrics(env.DB, item_id);
-
-    return new Response(
-      JSON.stringify({ success: true, delta, M, P }), 
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error('Error in handleIncrement:', error);
-    return new Response(
-      JSON.stringify({ error: 'INTERNAL_ERROR', message: String(error) }), 
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+async function handleDebugRoutes(request: Request, env: Env, path: string): Promise<Response> {
+  // 从R2获取图片 (仅在开发环境下可用)
+  if (path.startsWith('/api/debug/r2/') && request.method === 'GET') {
+    return handleDebugGetR2Image(request, env, path);
   }
+
+  return new Response(JSON.stringify({ error: 'NOT_FOUND' }), {
+    status: 404,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
 }
 
 /**
- * 处理获取 item 统计信息 API
- * GET /api/item/stats?item_id=123
+ * Debug模式专属：从R2获取图片
+ * GET /api/debug/r2/{fileName}
  */
-async function handleItemStats(request: Request, env: Env): Promise<Response> {
+async function handleDebugGetR2Image(request: Request, env: Env, path: string): Promise<Response> {
   try {
-    const url = new URL(request.url);
-    const item_id_str = url.searchParams.get('item_id');
-    
-    if (!item_id_str) {
+    if (!env.DEV) {
       return new Response(
-        JSON.stringify({ error: 'INVALID_PARAMS', message: 'item_id is required' }), 
+        JSON.stringify({ error: 'FORBIDDEN', message: 'This endpoint is only available in development mode' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const fileName = path.replace('/api/debug/r2/', '');
+
+    if (!fileName) {
+      return new Response(
+        JSON.stringify({ error: 'INVALID_PARAMS', message: 'File name is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
-    const item_id = parseInt(item_id_str, 10);
-    
-    if (!Number.isInteger(item_id) || item_id <= 0) {
+
+    console.log('🔍 Debug: Fetching R2 object:', fileName);
+
+    const object = await env.R2.get(fileName);
+
+    if (!object) {
+      console.log('❌ Debug: Object not found in R2:', fileName);
       return new Response(
-        JSON.stringify({ error: 'INVALID_PARAMS', message: 'item_id must be a positive integer' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    // 获取 item 信息和基础统计数据
-    const result = await get_item_with_stats(env.DB, item_id);
-    
-    if (!result.item) {
-      return new Response(
-        JSON.stringify({ error: 'NOT_FOUND', message: 'Item not found' }), 
+        JSON.stringify({ error: 'NOT_FOUND', message: 'Image not found in R2' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
-    // 计算算法相关的 M 和 P
-    const { M, P } = await get_item_algorithm_metrics(env.DB, item_id);
-    
-    return new Response(
-      JSON.stringify({
-        item: result.item,
-        stats: result.stats,
-        algorithm: {
-          M,
-          P,
-        },
-      }), 
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+
+    console.log('✅ Debug: Object found in R2:', {
+      key: object.key,
+      size: object.size,
+      uploaded: object.uploaded,
+      httpMetadata: object.httpMetadata
+    });
+
+    return new Response(object.body, {
+      headers: {
+        'Content-Type': object.httpMetadata?.contentType || 'image/jpeg',
+        'Cache-Control': 'public, max-age=31536000',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
   } catch (error) {
-    console.error('Error in handleItemStats:', error);
+    console.error('❌ Error in handleDebugGetR2Image:', error);
     return new Response(
-      JSON.stringify({ error: 'INTERNAL_ERROR', message: String(error) }), 
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-}
-
-/**
- * 处理获取所有 groups API
- * GET /api/groups
- */
-async function handleGetGroups(request: Request, env: Env): Promise<Response> {
-  try {
-    const groups = await get_groups(env.DB);
-    
-    return new Response(
-      JSON.stringify({ groups }), 
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error('Error in handleGetGroups:', error);
-    return new Response(
-      JSON.stringify({ error: 'INTERNAL_ERROR', message: String(error) }), 
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-}
-
-/**
- * 处理获取指定 group 的 items API
- * GET /api/items?group_id=123
- */
-async function handleGetItems(request: Request, env: Env): Promise<Response> {
-  try {
-    const url = new URL(request.url);
-    const group_id_str = url.searchParams.get('group_id');
-    
-    let group_id: number | null = null;
-    
-    if (group_id_str) {
-        const parsed = parseInt(group_id_str, 10);
-        if (!Number.isInteger(parsed) || parsed <= 0) {
-          return new Response(
-            JSON.stringify({ error: 'INVALID_PARAMS', message: 'group_id must be a positive integer' }), 
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        group_id = parsed;
-    }
-    
-    const items = await get_items(env.DB, group_id);
-    
-    // Enhance items with stats using parallel queries (similar to MemorialPage handling)
-    const itemsWithStats = await Promise.all(items.map(async (item) => {
-        try {
-             // Calculate algorithm metrics (M, P)
-             const { M, P } = await get_item_algorithm_metrics(env.DB, item.id);
-             
-             return {
-                 ...item,
-                 pomScore: P,
-                 delta: M
-             };
-        } catch (e) {
-            console.error(`Failed to get stats for item ${item.id}:`, e);
-            return {
-                ...item,
-                pomScore: 0,
-                delta: 0
-            };
-        }
-    }));
-
-    return new Response(
-      JSON.stringify({ items: itemsWithStats }), 
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error('Error in handleGetItems:', error);
-    return new Response(
-      JSON.stringify({ error: 'INTERNAL_ERROR', message: String(error) }), 
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-}
-
-/**
- * 处理创建 item API (智能创建 Group + 图片上传)
- * POST /api/items
- * Content-Type: multipart/form-data
- * FormData: { 
- *   group_name: string;
- *   title: string; 
- *   description?: string; 
- *   misc?: string (JSON);
- *   coverImage?: File
- * }
- */
-async function handleCreateItem(request: Request, env: Env): Promise<Response> {
-    try {
-        const contentType = request.headers.get('content-type') || '';
-        
-        let group_name: string;
-        let title: string;
-        let description: string = '';
-        let misc: any = {};
-        let coverImageUrl: string | undefined;
-
-        if (contentType.includes('multipart/form-data')) {
-            // 处理 FormData
-            const formData = await request.formData();
-            
-            group_name = formData.get('group_name') as string;
-            title = formData.get('title') as string;
-            description = (formData.get('description') as string) || '';
-            
-            const miscStr = formData.get('misc') as string;
-            if (miscStr) {
-                try {
-                    misc = JSON.parse(miscStr);
-                } catch (e) {
-                    console.error('Failed to parse misc:', e);
-                }
-            }
-
-            // 处理图片上传
-            const coverImageFile = formData.get('coverImage') as File | null;
-            if (coverImageFile && coverImageFile.size > 0) {
-                try {
-                    coverImageUrl = await uploadImageToR2(env, coverImageFile);
-                    console.log('Image uploaded to R2:', coverImageUrl);
-                } catch (e) {
-                    console.error('Failed to upload image to R2:', e);
-                    // 继续创建，只是没有图片
-                }
-            }
-        } else {
-            // 兼容 JSON 格式（向后兼容）
-            const body = await request.json<{ 
-                group_name: string; 
-                title: string; 
-                description?: string; 
-                misc?: any 
-            }>();
-            
-            group_name = body.group_name;
-            title = body.title;
-            description = body.description || '';
-            misc = body.misc || {};
-        }
-
-        if (!group_name || !title) {
-             return new Response(
-                JSON.stringify({ error: 'INVALID_PARAMS', message: 'group_name and title are required' }), 
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-             );
-        }
-
-        // 1. 检查 Group 是否存在
-        let group = await get_group_by_title(env.DB, group_name);
-        let group_id: number;
-
-        if (group) {
-            group_id = group.id;
-        } else {
-            // 2. 如果不存在，创建新 Group
-            group_id = await create_group(env.DB, group_name, `Category for ${group_name}`, { auto_created: true });
-        }
-
-        // 3. 如果有上传的图片，添加到 misc 中
-        if (coverImageUrl) {
-            misc.coverImage = coverImageUrl;
-        }
-
-        // 4. 创建 Item
-        const id = await create_item(env.DB, group_id, title, description, misc);
-        
-        // 5. 初始化一个热度窗口
-        await increment_item_window(env.DB, id, 1);
-
-        return new Response(
-            JSON.stringify({ success: true, id, group_id, coverImageUrl }), 
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-    } catch (e) {
-        console.error('Error in handleCreateItem:', e);
-         return new Response(
-            JSON.stringify({ error: 'INTERNAL_ERROR', message: String(e) }), 
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-         );
-    }
-}
-
-/**
- * 处理获取排行榜 API
- * GET /api/leaderboard?limit=10
- */
-async function handleGetLeaderboard(request: Request, env: Env): Promise<Response> {
-  try {
-    console.log('[Leaderboard API] Request received');
-    
-    if (!env.DB) {
-      console.error('[Leaderboard API] DB binding not found');
-      return new Response(
-        JSON.stringify({ error: 'INTERNAL_ERROR', message: 'Database binding not configured' }), 
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    const url = new URL(request.url);
-    const limit_str = url.searchParams.get('limit');
-    const limit = limit_str ? parseInt(limit_str, 10) : 10;
-    
-    console.log('[Leaderboard API] Limit:', limit);
-    
-    if (!Number.isInteger(limit) || limit <= 0 || limit > 100) {
-      console.error('[Leaderboard API] Invalid limit:', limit);
-      return new Response(
-        JSON.stringify({ error: 'INVALID_PARAMS', message: 'limit must be between 1 and 100' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    console.log('[Leaderboard API] Calling get_leaderboard...');
-    const leaderboard = await get_leaderboard(env.DB, limit);
-    console.log('[Leaderboard API] Success, entries:', leaderboard.length);
-    
-    return new Response(
-      JSON.stringify({ leaderboard }), 
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error('[Leaderboard API] Error:', error);
-    console.error('[Leaderboard API] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    return new Response(
-      JSON.stringify({ 
-        error: 'INTERNAL_ERROR', 
-        message: String(error),
-        details: error instanceof Error ? error.message : 'Unknown error'
-      }), 
+      JSON.stringify({ error: 'INTERNAL_ERROR', message: String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -1,5 +1,5 @@
-import type { Item, ItemGroup, ItemHeatRecordWindow, User, EmailVerificationCode } from "./types";
-import { computeWeightedWindowSum, computeScoreFromM } from "./algorithm";
+import type { Item, ItemGroup, ItemHeatRecordWindow } from "../types";
+import { computeWeightedWindowSum, computeScoreFromM } from "../algorithm";
 
 /**
  * 获取所有 item groups
@@ -47,17 +47,17 @@ export async function create_group(
 export async function get_items(db: D1Database, group_id: number | null = null): Promise<Item[]> {
     let query = `SELECT * FROM items`;
     const params: any[] = [];
-    
+
     if (group_id !== null) {
         query += ` WHERE group_id = ?`;
         params.push(group_id);
     }
-    
+
     query += ` ORDER BY created_at DESC`;
-    
+
     const stmt = db.prepare(query).bind(...params);
     const items = await stmt.all<Item>();
-    
+
     return items.results;
 }
 
@@ -85,13 +85,13 @@ export async function create_item(
  * 如果没有有效窗口，则创建一个新窗口（1分钟）
  */
 export async function increment_item_window(
-    db: D1Database, 
-    item_id: number, 
+    db: D1Database,
+    item_id: number,
     delta: number = 1
 ): Promise<void> {
     const now = Date.now();
     const windowDuration = 60 * 1000; // 1分钟
-    
+
     // 查找当前有效的窗口（expired_at > now）
     const activeWindow = await db.prepare(`
         SELECT * FROM item_heat_record_windows
@@ -99,7 +99,7 @@ export async function increment_item_window(
         ORDER BY expired_at DESC
         LIMIT 1
     `).bind(item_id, now).first<ItemHeatRecordWindow>();
-    
+
     if (activeWindow) {
         // 更新现有窗口
         await db.prepare(`
@@ -111,7 +111,7 @@ export async function increment_item_window(
         // 创建新窗口
         const created_at = now;
         const expired_at = now + windowDuration;
-        
+
         await db.prepare(`
             INSERT INTO item_heat_record_windows (item_id, delta, created_at, expired_at)
             VALUES (?, ?, ?, ?)
@@ -124,9 +124,9 @@ export async function increment_item_window(
  * misc: { gongpin: { "candle": 10, "flower": 5 } }
  */
 export async function update_item_misc_gongpin(
-    db: D1Database, 
-    itemId: number, 
-    tributeId: string, 
+    db: D1Database,
+    itemId: number,
+    tributeId: string,
     count: number = 1
 ): Promise<void> {
     // 1. Get current misc
@@ -144,7 +144,7 @@ export async function update_item_misc_gongpin(
     if (!misc.gongpin) {
         misc.gongpin = {};
     }
-    
+
     // Initialize if not exists
     if (!misc.gongpin[tributeId]) {
         misc.gongpin[tributeId] = 0;
@@ -166,14 +166,14 @@ export async function get_window_stats(
 ): Promise<number> {
     const now = Date.now();
     const since = now - duration_ms;
-    
+
     // 统计在时间范围内创建的窗口的总和
     const result = await db.prepare(`
         SELECT COALESCE(SUM(delta), 0) as total
         FROM item_heat_record_windows
         WHERE item_id = ? AND created_at >= ?
     `).bind(item_id, since).first<{ total: number }>();
-    
+
     return result?.total ?? 0;
 }
 
@@ -196,7 +196,7 @@ export async function get_item_with_stats(
     const item = await db.prepare(`
         SELECT * FROM items WHERE id = ?
     `).bind(item_id).first<Item>();
-    
+
     // 获取各时间维度的统计
     const stats = {
         '1min': await get_window_stats(db, item_id, 1 * 60 * 1000),      // 1分钟
@@ -204,22 +204,12 @@ export async function get_item_with_stats(
         '1hour': await get_window_stats(db, item_id, 60 * 60 * 1000),    // 1小时
         '24hour': await get_window_stats(db, item_id, 24 * 60 * 60 * 1000) // 24小时
     };
-    
+
     return { item, stats };
 }
 
 /**
  * 获取某个 item 在以「当前时间减去整一天」为中点时的加权窗口和 M 以及对应的 P
- *
- * 定义：
- * - now: 当前时间
- * - t = now - 24h
- * - span = 24h
- * - M = computeWeightedWindowSum(t, span, windows)
- * - P = computeScoreFromM(M)
- *
- * 为了避免扫描过多历史数据，这里只查询最近 48 小时的窗口。
- * 如果没有任何窗口数据，会自动初始化一个窗口。
  */
 export async function get_item_algorithm_metrics(
     db: D1Database,
@@ -242,9 +232,8 @@ export async function get_item_algorithm_metrics(
 
     // 如果没有任何窗口数据，创建一个初始窗口
     if (windows.length === 0) {
-        // 暂时注释掉写操作来调试 500 错误
         await increment_item_window(db, item_id, 1);
-        
+
         // 重新查询
         rows = await db.prepare(`
             SELECT id, item_id, delta, created_at, expired_at
@@ -252,7 +241,7 @@ export async function get_item_algorithm_metrics(
             WHERE item_id = ? AND created_at >= ?
             ORDER BY created_at ASC
         `).bind(item_id, since).all<ItemHeatRecordWindow>();
-        
+
         windows = rows.results ?? [];
     }
 
@@ -264,7 +253,6 @@ export async function get_item_algorithm_metrics(
 
 /**
  * 获取每周排行榜（Top Remembered）
- * 返回 items 及其热度分数
  */
 export async function get_leaderboard(
     db: D1Database,
@@ -280,19 +268,13 @@ export async function get_leaderboard(
     const oneDayMs = 24 * 60 * 60 * 1000;
     const since = now - oneDayMs; // 过去 24 小时
 
-    /**
-     * SQL 逻辑：
-     * 1. 左连接 items 和 windows
-     * 2. 仅关联最近 24 小时的 windows 数据
-     * 3. 求和 delta 作为原始分数 (raw)
-     */
     const query = `
-        SELECT 
+        SELECT
             i.*,
             COALESCE(SUM(w.delta), 0) as rawScore
         FROM items i
-        LEFT JOIN item_heat_record_windows w 
-            ON i.id = w.item_id 
+        LEFT JOIN item_heat_record_windows w
+            ON i.id = w.item_id
             AND w.created_at >= ?
         GROUP BY i.id
         ORDER BY rawScore DESC
@@ -303,16 +285,11 @@ export async function get_leaderboard(
         const results = await db.prepare(query)
             .bind(since, limit)
             .all<Item & { rawScore: number }>();
-            
+
         if (!results.results) return [];
 
         return results.results.map((row, index) => {
             const { rawScore, ...item } = row;
-            
-            // 在应用层计算 POM 分数
-            // 目前逻辑简单：POM = RAW
-            // 未来可以在这里添加更复杂的应用层计算逻辑，例如：
-            // const pomScore = Math.log(rawScore + 1) * 10; 
             const pomScore = rawScore;
 
             return {
@@ -328,104 +305,4 @@ export async function get_leaderboard(
         console.error('[get_leaderboard] SQL execution error:', error);
         throw error;
     }
-}
-
-// ==================== 用户认证相关函数 ====================
-
-/**
- * 根据邮箱获取用户
- */
-export async function get_user_by_email(db: D1Database, email: string): Promise<User | null> {
-    return await db.prepare(`
-        SELECT * FROM users WHERE email = ?
-    `).bind(email).first<User>();
-}
-
-/**
- * 根据ID获取用户
- */
-export async function get_user_by_id(db: D1Database, id: number): Promise<User | null> {
-    return await db.prepare(`
-        SELECT * FROM users WHERE id = ?
-    `).bind(id).first<User>();
-}
-
-/**
- * 创建新用户
- */
-export async function create_user(
-    db: D1Database,
-    email: string,
-    password_hash: string
-): Promise<number> {
-    const now = new Date().toISOString();
-    const result = await db.prepare(`
-        INSERT INTO users (email, password_hash, created_at, updated_at)
-        VALUES (?, ?, ?, ?)
-    `).bind(email, password_hash, now, now).run();
-
-    return result.meta.last_row_id as number;
-}
-
-/**
- * 更新用户密码
- */
-export async function update_user_password(
-    db: D1Database,
-    user_id: number,
-    password_hash: string
-): Promise<void> {
-    const now = new Date().toISOString();
-    await db.prepare(`
-        UPDATE users 
-        SET password_hash = ?, updated_at = ?
-        WHERE id = ?
-    `).bind(password_hash, now, user_id).run();
-}
-
-/**
- * 创建邮箱验证码
- */
-export async function create_email_verification_code(
-    db: D1Database,
-    email: string,
-    code: string,
-    expires_at: number
-): Promise<void> {
-    const now = Date.now();
-    await db.prepare(`
-        INSERT INTO email_verification_codes (email, code, expires_at, created_at)
-        VALUES (?, ?, ?, ?)
-    `).bind(email, code, expires_at, now).run();
-}
-
-/**
- * 验证邮箱验证码
- */
-export async function verify_email_code(
-    db: D1Database,
-    email: string,
-    code: string
-): Promise<boolean> {
-    const now = Date.now();
-    const record = await db.prepare(`
-        SELECT * FROM email_verification_codes 
-        WHERE email = ? AND code = ? AND expires_at > ?
-        ORDER BY created_at DESC
-        LIMIT 1
-    `).bind(email, code, now).first<EmailVerificationCode>();
-    
-    return !!record;
-}
-
-/**
- * 删除邮箱的验证码
- */
-export async function delete_email_verification_codes(
-    db: D1Database,
-    email: string
-): Promise<void> {
-    await db.prepare(`
-        DELETE FROM email_verification_codes WHERE email = ?
-    `).bind(email).run();
 }

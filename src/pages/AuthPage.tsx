@@ -19,13 +19,6 @@ const AuthPage: React.FC = () => {
   const [codeSent, setCodeSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
-  // Generate meteors for background
-  const meteors = Array.from({ length: 15 }).map((_, i) => ({
-    left: Math.random() * 100,
-    delay: Math.random() * 5,
-    duration: Math.random() * 3 + 2
-  }));
-
   // 倒计时逻辑
   React.useEffect(() => {
     if (countdown > 0) {
@@ -129,27 +122,7 @@ const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0F172A] py-32 px-4 relative overflow-hidden">
-      {/* Animated Background - matching HomePage */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0F172A] via-[#1E293B] to-[#0F172A]"></div>
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30"></div>
-
-      {/* Meteors */}
-      {meteors.map((m, i) => (
-        <span
-          key={i}
-          className="absolute top-0 h-0.5 w-0.5 rounded-full bg-white shadow-[0_0_0_1px_#ffffff10] animate-meteor"
-          style={{
-            left: `${m.left}%`,
-            animationDelay: `${m.delay}s`,
-            animationDuration: `${m.duration}s`,
-            top: '-10px',
-          }}
-        >
-          <div className="pointer-events-none absolute top-1/2 -z-10 h-[1px] w-[50px] -translate-y-1/2 bg-gradient-to-r from-transparent to-white" />
-        </span>
-      ))}
-
+    <div className="min-h-screen flex items-center justify-center py-32 px-4">
       <div className="relative z-10 bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl max-w-md w-full">
         {/* Tab 切换 */}
         <div className="flex border-b border-slate-800 rounded-t-2xl overflow-hidden">

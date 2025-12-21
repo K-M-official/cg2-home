@@ -188,20 +188,67 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
   const fetchMemorial = async (id: string) => {
       setLoadingMemorial(true);
       try {
-          const response = await fetch(`/api/item/stats?item_id=${id}`);
-          if (response.ok) {
-              const data = await response.json();
+          // 并行获取 item 信息、gallery、timeline 和 tributes
+          const [itemResponse, galleryResponse, timelineResponse, tributesResponse] = await Promise.all([
+              fetch(`/api/item/stats?item_id=${id}`),
+              fetch(`/api/content/gallery?item_id=${id}`),
+              fetch(`/api/content/timeline?item_id=${id}`),
+              fetch(`/api/content/tribute?item_id=${id}`)
+          ]);
+
+          if (itemResponse.ok) {
+              const data = await itemResponse.json();
               const item = data.item;
-              
+
               let parsedMisc: any = {};
               try { parsedMisc = item.misc ? JSON.parse(item.misc) : {}; } catch { parsedMisc = {}; }
 
               const gongpinStats = parsedMisc.gongpin || {};
               const mockFallback = MOCK_MEMORIALS[0];
 
+              // 获取 gallery 图片
+              let images: any[] = [];
+              if (galleryResponse.ok) {
+                  const galleryData = await galleryResponse.json();
+                  images = (galleryData.images || []).map((img: any) => ({
+                      id: img.id,
+                      image_url: img.image_url,
+                      caption: img.caption,
+                      year: img.year,
+                      user_email: img.user_email
+                  }));
+              }
+
+              // 获取 timeline 事件
+              let timeline: any[] = [];
+              if (timelineResponse.ok) {
+                  const timelineData = await timelineResponse.json();
+                  timeline = (timelineData.events || []).map((event: any) => ({
+                      id: event.id,
+                      year: event.year,
+                      month: event.month,
+                      day: event.day,
+                      title: event.title,
+                      description: event.description,
+                      image_url: event.image_url
+                  }));
+              }
+
+              // 获取 tributes 留言
+              let messages: any[] = [];
+              if (tributesResponse.ok) {
+                  const tributesData = await tributesResponse.json();
+                  messages = (tributesData.tributes || []).map((tribute: any) => ({
+                      id: tribute.id,
+                      content: tribute.content,
+                      author: tribute.user_email || tribute.author_name || 'Anonymous User',
+                      date: new Date(tribute.created_at).toLocaleDateString(),
+                      user_id: tribute.user_id
+                  }));
+              }
+
               // Re-calculate stats for detail view
-              const stats = { candles: Math.floor(data.stats['1hour'] / 1), flowers: 0, tributes: 0, shares: 0 };
-              // Note: 'candles' here is just a placeholder from original code, ideally should sum up from gongpinStats like in list view
+              const stats = { candles: Math.floor(data.stats['1hour'] / 1), flowers: 0, tributes: messages.length, shares: 0 };
 
               const mappedMemorial: Memorial = {
                   id: String(item.id),
@@ -210,18 +257,18 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
                   dates: parsedMisc.dates || (parsedMisc.birthDate ? `${parsedMisc.birthDate} - ${parsedMisc.deathDate || ''}` : 'Unknown'),
                   bio: item.description ? item.description.replace(/<[^>]+>/g, '') : 'No description',
                   coverImage: parsedMisc.coverImage || parsedMisc.image || mockFallback.coverImage,
-                  images: parsedMisc.images || [],
+                  images: images,
                   templateId: parsedMisc.templateId || 'ethereal-garden',
-                  timeline: parsedMisc.timeline || [],
-                  stats: stats, 
-                  messages: parsedMisc.messages || [],
+                  timeline: timeline,
+                  stats: stats,
+                  messages: messages,
                   badgeId: `RWA-${item.id}`,
                   pomScore: data.algorithm?.P || 0,
                   delta: data.algorithm?.M || 0,
                   gongpinStats: gongpinStats,
                   onChainHash: parsedMisc.onChainHash
               };
-              
+
               setCurrentMemorial(mappedMemorial);
           } else {
               // Fallback

@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
-import { get_user_by_email, get_user_by_id, create_user, update_user_password, create_email_verification_code, verify_email_code, delete_email_verification_codes } from './db';
+import { get_user_by_email, get_user_by_id, create_user, update_user_password, create_email_verification_code, verify_email_code, delete_email_verification_codes } from './db/users';
+import { get_user_roles } from './db/roles';
 
 // ==================== JWT 工具函数 ====================
 
@@ -40,7 +41,7 @@ async function generateJWT(payload: any, secret: string, expiresIn: number = 864
 /**
  * 简单的 JWT 验证函数
  */
-async function verifyJWT(token: string, secret: string): Promise<any> {
+export async function verifyJWT(token: string, secret: string): Promise<any> {
     const parts = token.split('.');
     if (parts.length !== 3) {
         throw new Error('Invalid token format');
@@ -134,7 +135,7 @@ export async function handleSendCode(request: Request, env: Env): Promise<Respon
         if (!email) {
             return new Response(
                 JSON.stringify({ error: 'INVALID_PARAMS', message: 'Email is required' }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -143,7 +144,7 @@ export async function handleSendCode(request: Request, env: Env): Promise<Respon
         if (!emailRegex.test(email)) {
             return new Response(
                 JSON.stringify({ error: 'INVALID_EMAIL', message: 'Invalid email format' }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -220,7 +221,7 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
         if (!email || !password || !code) {
             return new Response(
                 JSON.stringify({ error: 'INVALID_PARAMS', message: 'Email, password and verification code are required' }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -229,7 +230,7 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
         if (!emailRegex.test(email)) {
             return new Response(
                 JSON.stringify({ error: 'INVALID_EMAIL', message: 'Invalid email format' }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -237,7 +238,7 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
         if (password.length < 6) {
             return new Response(
                 JSON.stringify({ error: 'WEAK_PASSWORD', message: 'Password must be at least 6 characters' }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -246,7 +247,7 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
         if (!isCodeValid) {
             return new Response(
                 JSON.stringify({ error: 'INVALID_CODE', message: 'Invalid or expired verification code' }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -255,7 +256,7 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
         if (existingUser) {
             return new Response(
                 JSON.stringify({ error: 'USER_EXISTS', message: 'User already exists' }),
-                { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -268,15 +269,18 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
         // 删除已使用的验证码
         await delete_email_verification_codes(env.DB, email);
 
+        // 获取用户角色
+        const roles = await get_user_roles(env.DB, user_id);
+
         // 生成 JWT
         const jwtSecret = env.JWT_SECRET || 'default-secret-change-in-production';
-        const token = await generateJWT({ user_id, email }, jwtSecret);
+        const token = await generateJWT({ user_id, email, roles }, jwtSecret);
 
         return new Response(
-            JSON.stringify({ 
-                success: true, 
+            JSON.stringify({
+                success: true,
                 token,
-                user: { id: user_id, email }
+                user: { id: user_id, email, roles }
             }),
             { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -303,7 +307,7 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
         if (!email || !password) {
             return new Response(
                 JSON.stringify({ error: 'INVALID_PARAMS', message: 'Email and password are required' }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -312,7 +316,7 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
         if (!user) {
             return new Response(
                 JSON.stringify({ error: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }),
-                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -321,19 +325,22 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
         if (password_hash !== user.password_hash) {
             return new Response(
                 JSON.stringify({ error: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }),
-                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
+        // 获取用户角色
+        const roles = await get_user_roles(env.DB, user.id);
+
         // 生成 JWT
         const jwtSecret = env.JWT_SECRET || 'default-secret-change-in-production';
-        const token = await generateJWT({ user_id: user.id, email: user.email }, jwtSecret);
+        const token = await generateJWT({ user_id: user.id, email: user.email, roles }, jwtSecret);
 
         return new Response(
-            JSON.stringify({ 
-                success: true, 
+            JSON.stringify({
+                success: true,
                 token,
-                user: { id: user.id, email: user.email }
+                user: { id: user.id, email: user.email, roles }
             }),
             { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -360,7 +367,7 @@ export async function handleForgotPassword(request: Request, env: Env): Promise<
         if (!email) {
             return new Response(
                 JSON.stringify({ error: 'INVALID_PARAMS', message: 'Email is required' }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -452,7 +459,7 @@ export async function handleResetPassword(request: Request, env: Env): Promise<R
         if (!email || !code || !password) {
             return new Response(
                 JSON.stringify({ error: 'INVALID_PARAMS', message: 'Email, code and password are required' }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -460,7 +467,7 @@ export async function handleResetPassword(request: Request, env: Env): Promise<R
         if (password.length < 6) {
             return new Response(
                 JSON.stringify({ error: 'WEAK_PASSWORD', message: 'Password must be at least 6 characters' }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -469,7 +476,7 @@ export async function handleResetPassword(request: Request, env: Env): Promise<R
         if (!isCodeValid) {
             return new Response(
                 JSON.stringify({ error: 'INVALID_CODE', message: 'Invalid or expired verification code' }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -478,7 +485,7 @@ export async function handleResetPassword(request: Request, env: Env): Promise<R
         if (!user) {
             return new Response(
                 JSON.stringify({ error: 'USER_NOT_FOUND', message: 'User not found' }),
-                { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -518,7 +525,7 @@ export async function handleVerifyToken(request: Request, env: Env): Promise<Res
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return new Response(
                 JSON.stringify({ error: 'UNAUTHORIZED', message: 'Missing or invalid authorization header' }),
-                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -533,14 +540,22 @@ export async function handleVerifyToken(request: Request, env: Env): Promise<Res
         if (!user) {
             return new Response(
                 JSON.stringify({ error: 'USER_NOT_FOUND', message: 'User not found' }),
-                { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
+        // 获取用户角色
+        const roles = await get_user_roles(env.DB, user.id);
+
         return new Response(
-            JSON.stringify({ 
+            JSON.stringify({
                 success: true,
-                user: { id: user.id, email: user.email }
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    created_at: user.created_at,
+                    roles: roles
+                }
             }),
             { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
