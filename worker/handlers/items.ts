@@ -1,11 +1,37 @@
 import { increment_item_window, get_item_with_stats, get_groups, get_items, get_item_algorithm_metrics, get_leaderboard, update_item_misc_gongpin, create_group, create_item, get_group_by_title } from '../db/items';
 import { SHOP_ITEMS } from '../../lib/constants';
+import { get_or_create_wallet, get_arweave_address_from_wallet, create_arweave_transaction } from '../db/wallet';
+import { verifyJWT } from '../auth';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type,Authorization',
 } as const;
+
+/**
+ * 获取当前用户信息（从JWT）
+ */
+async function getCurrentUser(request: Request, env: Env): Promise<{ user_id: number; email: string; roles: string[] } | null> {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const payload = await verifyJWT(token, env.JWT_SECRET);
+
+    return {
+      user_id: payload.user_id,
+      email: payload.email,
+      roles: payload.roles || []
+    };
+  } catch (error) {
+    console.error('Failed to verify token:', error);
+    return null;
+  }
+}
 
 /**
  * 纪念对象相关路由处理
@@ -312,11 +338,13 @@ async function handleCreateItem(request: Request, env: Env): Promise<Response> {
 
     let group = await get_group_by_title(env.DB, group_name);
     let group_id: number;
+    let isNewGroup = false;
 
     if (group) {
       group_id = group.id;
     } else {
       group_id = await create_group(env.DB, group_name, `Category for ${group_name}`, { auto_created: true });
+      isNewGroup = true;
     }
 
     if (coverImageUrl) {
@@ -325,6 +353,86 @@ async function handleCreateItem(request: Request, env: Env): Promise<Response> {
 
     const id = await create_item(env.DB, group_id, title, description, misc);
     await increment_item_window(env.DB, id, 1);
+
+    // 获取当前用户（用于创建 Arweave 交易）
+    const user = await getCurrentUser(request, env);
+
+    // 如果创建了新的 Group，创建 Arweave 交易记录
+    if (isNewGroup && user) {
+      try {
+        const wallet = await get_or_create_wallet(env.DB, user.user_id);
+        const arweave_address = await get_arweave_address_from_wallet(wallet);
+
+        const groupData = JSON.stringify({
+          type: 'group',
+          group_id: group_id,
+          group_name: group_name,
+          description: `Category for ${group_name}`,
+          auto_created: true,
+          created_at: Date.now()
+        });
+
+        await create_arweave_transaction(
+          env.DB,
+          user.user_id,
+          arweave_address,
+          'application/json',
+          groupData,
+          {
+            type: 'group',
+            group_id: group_id,
+            group_name: group_name
+          },
+          groupData.length,
+          null
+        );
+
+        console.log(`✅ Created Arweave transaction for new group: ${group_name} (ID: ${group_id})`);
+      } catch (error) {
+        console.error('Failed to create Arweave transaction for group:', error);
+      }
+    }
+
+    // 为创建的 Item (Token) 创建 Arweave 交易记录
+    if (user) {
+      try {
+        const wallet = await get_or_create_wallet(env.DB, user.user_id);
+        const arweave_address = await get_arweave_address_from_wallet(wallet);
+
+        // 准备 Item 数据
+        const itemData = JSON.stringify({
+          type: 'item',
+          item_id: id,
+          group_id: group_id,
+          group_name: group_name,
+          title: title,
+          description: description,
+          misc: misc,
+          coverImageUrl: coverImageUrl || null,
+          created_at: Date.now()
+        });
+
+        await create_arweave_transaction(
+          env.DB,
+          user.user_id,
+          arweave_address,
+          'application/json',
+          itemData,
+          {
+            type: 'item',
+            item_id: id,
+            group_id: group_id,
+            title: title
+          },
+          itemData.length,
+          null
+        );
+
+        console.log(`✅ Created Arweave transaction for new item: ${title} (ID: ${id})`);
+      } catch (error) {
+        console.error('Failed to create Arweave transaction for item:', error);
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true, id, group_id, coverImageUrl }),

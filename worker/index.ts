@@ -3,6 +3,8 @@ import { handleUserRoutes } from './handlers/user';
 import { handleAdminRoutes } from './handlers/admin';
 import { handleItemRoutes } from './handlers/items';
 import { handleContentRoutes } from './handlers/content';
+import { handleWalletRoutes } from './handlers/wallet';
+import { process_pending_execution, process_pending_confirmation } from './cron';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,6 +33,28 @@ export default {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   },
+
+  /**
+   * Cron Job: 每5分钟执行一次
+   * 包含两个独立的任务：
+   * 1. 处理待执行的 Arweave 交易
+   * 2. 检查待确认的 Arweave 交易
+   */
+  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    console.log('🕐 Cron job started at:', new Date(controller.scheduledTime).toISOString());
+
+    try {
+      // 任务 1: 处理待执行的交易
+      await process_pending_execution(env);
+
+      // 任务 2: 检查待确认的交易
+      await process_pending_confirmation(env);
+
+      console.log('🎉 Cron job completed successfully');
+    } catch (error) {
+      console.error('❌ Cron job failed:', error);
+    }
+  }
 } satisfies ExportedHandler<Env>;
 
 /**
@@ -59,6 +83,12 @@ async function handleApi(request: Request, env: Env, path: string): Promise<Resp
   // 内容提交相关路由: /api/content/*
   if (path.startsWith('/api/content/')) {
     const response = await handleContentRoutes(request, env, path);
+    if (response) return response;
+  }
+
+  // 钱包相关路由: /api/wallet/*
+  if (path.startsWith('/api/wallet')) {
+    const response = await handleWalletRoutes(request, env, path);
     if (response) return response;
   }
 

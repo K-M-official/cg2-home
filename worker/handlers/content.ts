@@ -1,5 +1,6 @@
 import { verifyJWT } from '../auth';
 import { create_gallery_image, create_timeline_event, create_tribute, get_gallery_images, get_timeline_events, get_tributes } from '../db/content';
+import { get_or_create_wallet, get_arweave_address_from_wallet, create_arweave_transaction } from '../db/wallet';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -121,6 +122,9 @@ async function handleGalleryUpload(request: Request, env: Env): Promise<Response
     // 上传图片到 R2
     const imageUrl = await uploadImageToR2(env, imageFile);
 
+    // 提取 R2 文件名（用于 content_reference）
+    const r2FileName = imageUrl.split('/').pop() || '';
+
     // 创建 gallery 记录
     await create_gallery_image(
       env.DB,
@@ -130,6 +134,33 @@ async function handleGalleryUpload(request: Request, env: Env): Promise<Response
       caption,
       year ? parseInt(year) : null
     );
+
+    // 创建 Arweave 交易记录
+    try {
+      const wallet = await get_or_create_wallet(env.DB, user.user_id);
+      const arweave_address = await get_arweave_address_from_wallet(wallet);
+
+      await create_arweave_transaction(
+        env.DB,
+        user.user_id,
+        arweave_address,
+        imageFile.type || 'image/jpeg',
+        r2FileName,
+        {
+          type: 'gallery_image',
+          item_id: parseInt(item_id),
+          caption: caption || null,
+          year: year ? parseInt(year) : null
+        },
+        imageFile.size,
+        null // fee_amount will be calculated during execution
+      );
+
+      console.log(`✅ Created Arweave transaction for gallery image: ${r2FileName}`);
+    } catch (error) {
+      console.error('Failed to create Arweave transaction for gallery image:', error);
+      // 不阻止主流程，继续返回成功
+    }
 
     return new Response(
       JSON.stringify({ success: true, message: 'Image uploaded successfully' }),
@@ -234,6 +265,32 @@ async function handleTributeCreate(request: Request, env: Env): Promise<Response
       user.user_id,
       null // author_name (使用 user_id 而不是匿名名字)
     );
+
+    // 创建 Arweave 交易记录
+    try {
+      const wallet = await get_or_create_wallet(env.DB, user.user_id);
+      const arweave_address = await get_arweave_address_from_wallet(wallet);
+
+      await create_arweave_transaction(
+        env.DB,
+        user.user_id,
+        arweave_address,
+        'text/plain',
+        body.content, // 文字内容直接作为 content_reference
+        {
+          type: 'tribute',
+          item_id: body.item_id,
+          content_length: body.content.length
+        },
+        body.content.length,
+        null // fee_amount will be calculated during execution
+      );
+
+      console.log(`✅ Created Arweave transaction for tribute (item: ${body.item_id})`);
+    } catch (error) {
+      console.error('Failed to create Arweave transaction for tribute:', error);
+      // 不阻止主流程，继续返回成功
+    }
 
     return new Response(
       JSON.stringify({ success: true, message: 'Tribute posted successfully' }),

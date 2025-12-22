@@ -157,6 +157,36 @@ export async function update_item_misc_gongpin(
 }
 
 /**
+ * 更新 Item 封面图 URL（用于 Arweave 确认后）
+ */
+export async function update_item_cover_image_url(
+    db: D1Database,
+    old_url: string,
+    new_url: string
+): Promise<void> {
+    // 查找所有包含旧 URL 的 items
+    const items = await db.prepare(`
+        SELECT id, misc FROM items
+        WHERE misc LIKE ?
+    `).bind(`%${old_url}%`).all<{ id: number; misc: string }>();
+
+    // 更新每个 item 的 misc.coverImage
+    for (const item of items.results || []) {
+        try {
+            const misc = JSON.parse(item.misc);
+            if (misc.coverImage === old_url) {
+                misc.coverImage = new_url;
+                await db.prepare('UPDATE items SET misc = ? WHERE id = ?')
+                    .bind(JSON.stringify(misc), item.id)
+                    .run();
+            }
+        } catch (error) {
+            console.error(`Failed to update item ${item.id} cover image:`, error);
+        }
+    }
+}
+
+/**
  * 获取指定时间范围内的窗口统计
  */
 export async function get_window_stats(

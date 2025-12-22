@@ -48,6 +48,21 @@ export async function get_gallery_images(
 }
 
 /**
+ * 更新 Gallery 图片 URL（用于 Arweave 确认后）
+ */
+export async function update_gallery_image_url(
+    db: D1Database,
+    old_url: string,
+    new_url: string
+): Promise<void> {
+    await db.prepare(`
+        UPDATE item_gallery
+        SET image_url = ?
+        WHERE image_url = ?
+    `).bind(new_url, old_url).run();
+}
+
+/**
  * 审核图片
  */
 export async function moderate_gallery_image(

@@ -16,6 +16,7 @@
 	},
 	"dependencies": {
 		"@google/genai": "^1.30.0",
+		"arweave": "^1.15.7",
 		"class-variance-authority": "^0.7.1",
 		"framer-motion": "^12.23.24",
 		"lucide-react": "^0.555.0",
