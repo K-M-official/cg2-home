@@ -50,12 +50,12 @@ const HomePage: React.FC = () => {
       <section className="relative h-screen w-full overflow-hidden flex flex-col items-center justify-center text-center px-6">
         {/* Content */}
         <div className="relative z-20 max-w-5xl mx-auto flex flex-col items-center">
-           <h1 className="text-5xl md:text-8xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-slate-400 mb-8 leading-tight tracking-tight animate-fade-in opacity-0" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>
+           <h1 className="text-5xl lg:text-8xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-slate-400 mb-8 leading-tight tracking-tight animate-fade-in opacity-0" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>
              Death is not the end <br/>
              <span className="italic font-light text-slate-400">forgetting is</span>
            </h1>
 
-           <p className="text-slate-400 font-light text-lg md:text-xl max-w-xl mx-auto mb-16 animate-fade-in opacity-0" style={{ animationDelay: '0.8s', animationFillMode: 'forwards' }}>
+           <p className="text-slate-400 font-light text-lg lg:text-xl max-w-xl mx-auto mb-16 animate-fade-in opacity-0" style={{ animationDelay: '0.8s', animationFillMode: 'forwards' }}>
              Let memories exist eternally in the digital cosmos.
            </p>
 
@@ -88,9 +88,9 @@ const HomePage: React.FC = () => {
 
       {/* 2. CLOUD MEMORIAL SECTION */}
       <section id="cloud-memorial" className="min-h-[85vh] w-full bg-white flex items-center py-20">
-         <div className="max-w-7xl mx-auto px-6 w-full flex flex-col md:flex-row items-center gap-16">
+         <div className="max-w-7xl mx-auto px-6 w-full flex flex-col lg:flex-row items-center gap-16">
             
-            <div className="w-full md:w-1/2 relative">
+            <div className="w-full lg:w-1/2 relative">
                <div className="aspect-[4/5] rounded-3xl overflow-hidden relative shadow-2xl">
                  <img 
                    src="https://images.unsplash.com/photo-1519052537078-e6302a4968d4?q=80&w=2670&auto=format&fit=crop" 
@@ -110,8 +110,8 @@ const HomePage: React.FC = () => {
                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-indigo-50 rounded-full blur-3xl -z-10"></div>
             </div>
 
-            <div className="w-full md:w-1/2">
-               <h2 className="text-4xl md:text-6xl font-serif text-slate-900 mb-6 leading-tight">
+            <div className="w-full lg:w-1/2">
+               <h2 className="text-4xl lg:text-6xl font-serif text-slate-900 mb-6 leading-tight">
                  Cloud Memorial
                </h2>
                <p className="text-slate-500 text-lg font-light leading-relaxed mb-8">
@@ -147,13 +147,13 @@ const HomePage: React.FC = () => {
 
       {/* 3. REMEMBRANCE GALLERY SECTION */}
       <section className="min-h-screen w-full bg-slate-50 py-24 flex flex-col justify-center">
-         <div className="max-w-7xl mx-auto px-6 w-full mb-12 text-center md:text-left flex flex-col md:flex-row justify-between items-end">
+         <div className="max-w-7xl mx-auto px-6 w-full mb-12 text-center lg:text-left flex flex-col lg:flex-row justify-between items-end">
             <div>
-              <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
+              <div className="flex items-center gap-2 mb-4 justify-center lg:justify-start">
                  <Globe className="w-5 h-5 text-indigo-600" />
                  <span className="text-sm font-bold uppercase tracking-widest text-indigo-900">Public Community</span>
               </div>
-              <h2 className="text-4xl md:text-6xl font-serif text-slate-900 mb-4">
+              <h2 className="text-4xl lg:text-6xl font-serif text-slate-900 mb-4">
                 Remembrance Gallery
               </h2>
               <p className="text-slate-500 max-w-xl text-lg font-light">
@@ -162,19 +162,19 @@ const HomePage: React.FC = () => {
             </div>
             <button 
               onClick={() => navigate('/gallery')}
-              className="hidden md:flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-full hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl"
+              className="hidden lg:flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-full hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl"
             >
               Enter Gallery <ArrowRight className="w-4 h-4" />
             </button>
          </div>
 
          {/* 4 Cards Grid */}
-         <div className="max-w-7xl mx-auto px-6 w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 h-[600px] md:h-[500px]">
+         <div className="max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-4 gap-4 h-[600px] lg:h-[500px]">
             {galleryCategories.map((cat) => (
               <div 
                 key={cat.id}
                 onClick={() => navigate('/gallery')}
-                className="relative group overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 ease-out md:hover:w-[140%] md:w-full"
+                className="relative group overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 ease-out lg:hover:w-[140%] lg:w-full"
               >
                 <img 
                   src={cat.image} 
@@ -202,7 +202,7 @@ const HomePage: React.FC = () => {
             ))}
          </div>
          
-         <div className="mt-8 text-center md:hidden">
+         <div className="mt-8 text-center lg:hidden">
             <button 
               onClick={() => navigate('/gallery')}
               className="px-8 py-3 bg-slate-900 text-white rounded-full"
@@ -218,20 +218,20 @@ const HomePage: React.FC = () => {
          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-900/20 rounded-full blur-[120px] pointer-events-none"></div>
          <div className="absolute bottom-0 left-20 w-[400px] h-[400px] bg-blue-900/10 rounded-full blur-[100px] pointer-events-none"></div>
 
-         <div className="max-w-7xl mx-auto px-6 w-full flex flex-col md:flex-row items-center justify-between gap-16 relative z-10">
-            <div className="w-full md:w-1/2">
+         <div className="max-w-7xl mx-auto px-6 w-full flex flex-col lg:flex-row items-center justify-between gap-16 relative z-10">
+            <div className="w-full lg:w-1/2">
                <div className="flex items-center gap-3 mb-8 text-indigo-400">
                   <Hexagon className="w-6 h-6" />
                   <span className="text-sm font-bold uppercase tracking-widest">Web3 Integration</span>
                </div>
-               <h2 className="text-4xl md:text-6xl font-serif text-white mb-6 leading-tight">
+               <h2 className="text-4xl lg:text-6xl font-serif text-white mb-6 leading-tight">
                  Heritage Tokens
                </h2>
                <p className="text-slate-400 text-lg font-light leading-relaxed mb-10 max-w-lg">
                  Immutable proof of existence. See who has been selected for the Public Heritage Token via our PoM Leaderboard.
                </p>
                
-               <div className="flex flex-col sm:flex-row gap-6">
+               <div className="flex flex-col max-lg:flex-row gap-6">
                  <button 
                    onClick={() => navigate('/tokens')}
                    className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all flex items-center justify-center gap-2"
@@ -245,7 +245,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Leaderboard Data Display (Replaces Abstract Graphic) */}
-            <div className="w-full md:w-1/2 flex justify-center md:justify-end">
+            <div className="w-full lg:w-1/2 flex justify-center lg:justify-end">
                <div className="relative w-full max-w-md space-y-4">
                   <h3 className="text-xs uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>

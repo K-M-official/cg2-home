@@ -77,7 +77,7 @@ export const TechCard: React.FC<{ children: ReactNode; className?: string; title
 // --- Section Title ---
 export const SectionTitle: React.FC<{ title: string; subtitle?: string; light?: boolean; className?: string }> = ({ title, subtitle, light = false, className = "" }) => (
   <div className={`text-center  ${className || 'mb-12'}`}>
-    <h2 className={`font-serif text-3xl md:text-4xl mb-3 ${light ? 'text-white' : 'text-slate-800'}`}>{title}</h2>
+    <h2 className={`font-serif text-3xl lg:text-4xl mb-3 ${light ? 'text-white' : 'text-slate-800'}`}>{title}</h2>
     {subtitle && <p className={`font-light tracking-wide ${light ? 'text-slate-300' : 'text-slate-500'}`}>{subtitle}</p>}
   </div>
 );

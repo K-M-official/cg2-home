@@ -4,6 +4,7 @@ import { handleAdminRoutes } from './handlers/admin';
 import { handleItemRoutes } from './handlers/items';
 import { handleContentRoutes } from './handlers/content';
 import { handleWalletRoutes } from './handlers/wallet';
+import { handleSolanaRoutes } from './handlers/solana';
 import { process_pending_execution, process_pending_confirmation } from './cron';
 
 const corsHeaders = {
@@ -89,6 +90,12 @@ async function handleApi(request: Request, env: Env, path: string): Promise<Resp
   // 钱包相关路由: /api/wallet/*
   if (path.startsWith('/api/wallet')) {
     const response = await handleWalletRoutes(request, env, path);
+    if (response) return response;
+  }
+
+  // Solana 相关路由: /api/solana/*
+  if (path.startsWith('/api/solana/')) {
+    const response = await handleSolanaRoutes(request, env, path);
     if (response) return response;
   }
 

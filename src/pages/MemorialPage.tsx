@@ -239,13 +239,13 @@ interface MemorialHeaderProps {
 
 const MemorialHeader: React.FC<MemorialHeaderProps> = ({ memorial, isPublicRanked }) => {
   return (
-    <div className="relative h-[60vh] md:h-[70vh] w-full overflow-hidden bg-slate-900">
+    <div className="relative h-[60vh] lg:h-[70vh] w-full overflow-hidden bg-slate-900">
       <div className="absolute inset-0 bg-slate-900/30 z-10"></div>
       <img src={memorial.coverImage} alt="Cover" className="w-full h-full object-cover animate-fade-in scale-105 transform origin-center opacity-90" style={{ animationDuration: '3s' }} />
 
       <div className="absolute inset-0 z-20 bg-gradient-to-t from-white via-transparent to-transparent"></div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-8 md:p-16 z-30 text-center">
+      <div className="absolute bottom-0 left-0 right-0 p-8 lg:p-16 z-30 text-center">
         <div className="animate-fade-in" style={{ animationDelay: '0.5s' }}>
           <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full backdrop-blur-md border mb-6 ${
             isPublicRanked
@@ -258,7 +258,7 @@ const MemorialHeader: React.FC<MemorialHeaderProps> = ({ memorial, isPublicRanke
             </span>
           </div>
 
-          <h1 className="text-5xl md:text-8xl font-serif text-slate-900 mb-4">{memorial.name}</h1>
+          <h1 className="text-5xl lg:text-8xl font-serif text-slate-900 mb-4">{memorial.name}</h1>
           <p className="text-xl font-light text-slate-600 font-serif italic">{memorial.dates}</p>
         </div>
       </div>
@@ -290,21 +290,21 @@ const RitualSection: React.FC<RitualSectionProps> = ({
 }) => {
   return (
     <div className="max-w-5xl mx-auto px-6 -mt-16 relative z-40 mb-16">
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl shadow-slate-100/50 border border-white flex flex-col md:flex-row items-center justify-between gap-8">
-        <div className="md:w-1/2 text-center md:text-left">
-          <div className="flex justify-center md:justify-between items-baseline mb-2">
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl shadow-slate-100/50 border border-white flex flex-col lg:flex-row items-center justify-between gap-8">
+        <div className="lg:w-1/2 text-center lg:text-left">
+          <div className="flex justify-center lg:justify-between items-baseline mb-2">
             <h3 className="text-lg font-serif text-slate-800">Biography</h3>
           </div>
           <p className="text-slate-600 font-light leading-relaxed mb-4 line-clamp-4">
             {memorial.bio}
           </p>
-          <div className="flex gap-4 justify-center md:justify-start text-xs text-slate-400 uppercase tracking-widest">
+          <div className="flex gap-4 justify-center lg:justify-start text-xs text-slate-400 uppercase tracking-widest">
             <span>POM Score: {Math.floor(memorial.pomScore || 0)}</span>
             <span>Delta: {memorial.delta?.toFixed(2)}</span>
           </div>
         </div>
 
-        <div className="md:w-1/2 flex flex-wrap items-center justify-center md:justify-end gap-6 border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-8">
+        <div className="lg:w-1/2 flex flex-wrap items-center justify-center lg:justify-end gap-6 border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-8">
           <Candle initialCount={memorial.stats.candles} onLight={onLightCandle} />
 
           <div className="flex flex-col items-center gap-2">
@@ -324,9 +324,9 @@ const RitualSection: React.FC<RitualSectionProps> = ({
             </span>
           </div>
 
-          <div className="h-10 w-px bg-slate-200 hidden md:block"></div>
+          <div className="h-10 w-px bg-slate-200 hidden lg:block"></div>
 
-          <div className="flex flex-col gap-2 w-full md:w-auto">
+          <div className="flex flex-col gap-2 w-full lg:w-auto">
             <Button
               variant="primary"
               className="text-xs py-2 px-4 w-full bg-slate-900 text-white hover:bg-slate-800"
@@ -374,20 +374,18 @@ const GalleryTab: React.FC<GalleryTabProps> = ({ memorial, isAuthenticated, onOp
   }, [selectedImage, setNavbarVisible]);
 
   return (
-    <div>
+    <div className="relative">
       {isAuthenticated && (
-        <div className="mb-8 flex justify-end">
-          <button
-            onClick={onOpenUpload}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            <Upload className="w-4 h-4" />
-            Upload Image
-          </button>
-        </div>
+        <button
+          onClick={onOpenUpload}
+          className="fixed bottom-24 right-8 z-[60] flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-full shadow-lg hover:bg-slate-800 transition-all hover:scale-105"
+        >
+          <Upload className="w-5 h-5" />
+          <span className="hidden lg:inline">Upload Image</span>
+        </button>
       )}
 
-      <div className="columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8 animate-fade-in">
+      <div className="columns-1 lg:columns-2 lg:columns-3 gap-8 space-y-8 animate-fade-in">
         {memorial.images.map((img: any, i: number) => (
           <div key={i} className="break-inside-avoid group cursor-pointer" onClick={() => setSelectedImage(img)}>
             <div className="rounded-xl overflow-hidden mb-3 bg-slate-100">
@@ -464,17 +462,15 @@ interface TimelineTabProps {
 
 const TimelineTab: React.FC<TimelineTabProps> = ({ memorial, isAuthenticated, onOpenModal }) => {
   return (
-    <div>
+    <div className="relative">
       {isAuthenticated && (
-        <div className="mb-8 flex justify-end">
-          <button
-            onClick={onOpenModal}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Event
-          </button>
-        </div>
+        <button
+          onClick={onOpenModal}
+          className="fixed bottom-24 right-8 z-[60] flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-full shadow-lg hover:bg-slate-800 transition-all hover:scale-105"
+        >
+          <Plus className="w-5 h-5" />
+          <span className="hidden lg:inline">Add Event</span>
+        </button>
       )}
 
       <div className="max-w-2xl mx-auto space-y-12 animate-fade-in">

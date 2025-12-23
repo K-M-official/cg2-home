@@ -192,14 +192,14 @@ export const ParticleIntro: React.FC<ParticleIntroProps> = ({ onEnter }) => {
           className="group relative mb-6 transition-transform hover:scale-105 outline-none"
         >
           <div className="absolute inset-0 bg-indigo-500 blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
-          <h1 className="text-6xl md:text-9xl font-serif text-white font-bold tracking-widest relative z-10 drop-shadow-[0_0_25px_rgba(255,255,255,0.4)] cursor-pointer">
+          <h1 className="text-6xl lg:text-9xl font-serif text-white font-bold tracking-widest relative z-10 drop-shadow-[0_0_25px_rgba(255,255,255,0.4)] cursor-pointer">
             K&M ERA
           </h1>
         </button>
         
         <div className="h-px w-32 bg-gradient-to-r from-transparent via-indigo-400 to-transparent mb-8"></div>
         
-        <p className="text-slate-300 font-light text-xl md:text-2xl tracking-[0.2em] uppercase animate-pulse-slow mb-12">
+        <p className="text-slate-300 font-light text-xl lg:text-2xl tracking-[0.2em] uppercase animate-pulse-slow mb-12">
           The era of keeping memories
         </p>
 

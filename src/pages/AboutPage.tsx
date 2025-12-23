@@ -21,9 +21,9 @@ const AboutPage: React.FC = () => {
             <SectionTitle title="About K&M ERA" subtitle="Transparency, Trust, and Forever." />
         </div>
 
-        <div className="grid md:grid-cols-12 gap-8">
+        <div className="grid lg:grid-cols-12 gap-8">
           {/* Sidebar Navigation */}
-          <div className="md:col-span-3">
+          <div className="lg:col-span-3">
             <nav className="flex flex-col space-y-2 sticky top-24">
               <NavLink 
                 to="/about/privacy" 
@@ -45,9 +45,9 @@ const AboutPage: React.FC = () => {
           </div>
 
           {/* Content Area */}
-          <div className="md:col-span-9">
+          <div className="lg:col-span-9">
             <FadeIn>
-              <div className="bg-white rounded-2xl p-8 md:p-12 shadow-sm border border-slate-100 min-h-[60vh]">
+              <div className="bg-white rounded-2xl p-8 lg:p-12 shadow-sm border border-slate-100 min-h-[60vh]">
                 <Outlet />
               </div>
             </FadeIn>

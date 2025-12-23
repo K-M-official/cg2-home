@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut } from 'lucide-react';
+import { Menu, X, User, LogOut, Wallet } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LOGO from './LOGO';
 import { useAuth } from './context/AuthContext';
 import { useUI } from './context/UIContext';
+import { useWeb3 } from './context/Web3Context';
 import { StarryBackground } from './components/StarryBackground';
 
 const Layout: React.FC = () => {
@@ -18,6 +19,9 @@ const Layout: React.FC = () => {
 
   // UI 控制
   const { navbarVisible } = useUI();
+
+  // Web3 模式控制
+  const { isWeb3Mode, toggleWeb3Mode, walletAddress, connectWallet, disconnectWallet, isConnecting } = useWeb3();
 
   // Check if we are on a dark themed page
   const isDarkPage = location.pathname === '/' || location.pathname === '/heritage' || location.pathname === '/auth' || location.pathname === '/profile';
@@ -38,7 +42,7 @@ const Layout: React.FC = () => {
     { name: 'Home', path: '/' },
     { name: 'Gallery', path: '/gallery' },
     { name: 'Heritage & Tokens', path: '/heritage' },
-    { name: 'Create', path: '/create' },
+    { name: 'Create', path: '/create', hideInWeb3: true },
   ];
 
   const getNavTextColor = () => {
@@ -67,52 +71,96 @@ const Layout: React.FC = () => {
         <nav
           className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-md py-4 shadow-sm' : 'bg-transparent py-6'}`}
         >
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-          <div className={`cursor-pointer z-50 ${textColorClass} ${isDarkPage ? 'invert' : ''}`} onClick={() => navigate('/')}>
+        <div className="w-full px-4 lg:px-6 flex justify-between items-center overflow-hidden">
+          <div className={`cursor-pointer z-50 flex-shrink-0 ${textColorClass} ${isDarkPage ? 'invert' : ''}`} onClick={() => navigate('/')}>
             <LOGO />
           </div>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex gap-8 items-center">
-             {navLinks.map(link => (
-               <button 
-                key={link.name} 
-                onClick={() => navigate(link.path)}
-                className={`text-xs uppercase tracking-widest hover:opacity-70 transition-opacity ${textColorClass}`}
-               >
-                 {link.name}
-               </button>
-             ))}
-             {isAuthenticated && user ? (
-               <div className="flex items-center gap-3">
+          <div className="hidden lg:flex gap-2 items-center flex-shrink-0">
+             {/* 导航链接 - 使用 CSS 响应式显示 */}
+             <div className="hidden lg:flex gap-4 items-center">
+               {navLinks.map(link => (
                  <button
-                   onClick={() => navigate('/profile')}
-                   className={`px-4 py-2 rounded-full border text-xs uppercase tracking-widest ${borderColorClass} ${textColorClass} flex items-center gap-2 hover:bg-white/10 transition-all`}
+                  key={link.name}
+                  onClick={() => navigate(link.path)}
+                  className={`text-xs uppercase tracking-widest hover:opacity-70 transition-opacity whitespace-nowrap ${textColorClass} ${isWeb3Mode && link.hideInWeb3 ? 'hidden' : ''}`}
+                 >
+                   {link.name}
+                 </button>
+               ))}
+             </div>
+
+             {isWeb3Mode ? (
+               // Web3 模式：显示钱包连接
+               walletAddress ? (
+                 <div className="flex items-center gap-2">
+                   <button
+                     className={`px-3 py-2 rounded-full border text-xs uppercase tracking-widest ${borderColorClass} ${textColorClass} flex items-center gap-2`}
+                   >
+                     <Wallet size={14} />
+                     {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+                   </button>
+                   <button
+                     onClick={disconnectWallet}
+                     className={`px-3 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center gap-2 ${borderColorClass} ${textColorClass}`}
+                   >
+                     <LogOut size={14} />
+                     <span className="hidden lg:inline">Disconnect</span>
+                   </button>
+                 </div>
+               ) : (
+                 <button
+                   onClick={connectWallet}
+                   disabled={isConnecting}
+                   className={`px-4 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all flex items-center gap-2 ${borderColorClass} ${textColorClass}`}
+                 >
+                   <Wallet size={14} />
+                   {isConnecting ? 'Connecting...' : 'Connect'}
+                 </button>
+               )
+             ) : (
+               // 普通模式：显示邮箱登录
+               isAuthenticated && user ? (
+                 <div className="flex items-center gap-2">
+                   <button
+                     onClick={() => navigate('/profile')}
+                     className={`px-3 py-2 rounded-full border text-xs uppercase tracking-widest ${borderColorClass} ${textColorClass} flex items-center gap-2 hover:bg-white/10 transition-all`}
+                   >
+                     <User size={14} />
+                     <span className="hidden lg:inline">{user.email.split('@')[0]}</span>
+                   </button>
+                   <button
+                     onClick={logout}
+                     className={`px-3 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center gap-2 ${borderColorClass} ${textColorClass}`}
+                   >
+                     <LogOut size={14} />
+                     <span className="hidden lg:inline">Logout</span>
+                   </button>
+                 </div>
+               ) : (
+                 <button
+                   onClick={() => navigate('/auth')}
+                   className={`px-4 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-white hover:text-slate-900 transition-all flex items-center gap-2 ${borderColorClass} ${textColorClass}`}
                  >
                    <User size={14} />
-                   {user.email.split('@')[0]}
+                   <span className="hidden lg:inline">Login / Register</span>
                  </button>
-                 <button
-                   onClick={logout}
-                   className={`px-4 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center gap-2 ${borderColorClass} ${textColorClass}`}
-                 >
-                   <LogOut size={14} />
-                   Logout
-                 </button>
-               </div>
-             ) : (
-               <button
-                 onClick={() => navigate('/auth')}
-                 className={`px-5 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-white hover:text-slate-900 transition-all flex items-center gap-2 ${borderColorClass} ${textColorClass}`}
-               >
-                 <User size={14} />
-                 Login / Register
-               </button>
+               )
              )}
+
+             {/* Web3 Mode Toggle - 移到最右侧 */}
+             <button
+               onClick={toggleWeb3Mode}
+               className={`p-2 rounded-full border transition-all ${borderColorClass} ${textColorClass} ${isWeb3Mode ? 'bg-indigo-500/20 border-indigo-400' : 'hover:bg-white/10'}`}
+               title={isWeb3Mode ? 'Switch to Normal Mode' : 'Switch to Web3 Mode'}
+             >
+               <Wallet size={18} />
+             </button>
           </div>
 
           {/* Mobile Toggle */}
-          <button className={`md:hidden z-50 ${textColorClass}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button className={`max-lg:block hidden z-50 ${textColorClass}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
              {mobileMenuOpen ? <X /> : <Menu />}
           </button>
         </div>
@@ -124,20 +172,57 @@ const Layout: React.FC = () => {
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="absolute top-0 left-0 w-full h-screen bg-white flex flex-col items-center justify-center gap-8 md:hidden text-slate-800"
+                    className="absolute top-0 left-0 w-full h-screen bg-white flex flex-col items-center justify-center gap-8 max-lg:flex lg:hidden text-slate-800"
                 >
                     {navLinks.map(link => (
-                        <button 
-                            key={link.name} 
+                        <button
+                            key={link.name}
                             onClick={() => navigate(link.path)}
-                            className="font-serif text-3xl"
+                            className={`font-serif text-3xl ${isWeb3Mode && link.hideInWeb3 ? 'hidden' : ''}`}
                         >
                             {link.name}
                         </button>
                     ))}
-                    
+
+                    {/* Web3 Mode Toggle - Mobile */}
+                    <button
+                      onClick={toggleWeb3Mode}
+                      className={`px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest flex items-center gap-2 transition-all ${isWeb3Mode ? 'bg-indigo-500 text-white border-indigo-500' : 'hover:bg-slate-800 hover:text-white'}`}
+                    >
+                      <Wallet size={14} />
+                      {isWeb3Mode ? 'Web3 Mode' : 'Normal Mode'}
+                    </button>
+
                     {/* 移动端认证按钮 */}
-                    {isAuthenticated && user ? (
+                    {isWeb3Mode ? (
+                      // Web3 模式 - 移动端
+                      walletAddress ? (
+                        <div className="flex flex-col items-center gap-4 mt-4">
+                          <button className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest flex items-center gap-2">
+                            <Wallet size={14} />
+                            {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+                          </button>
+                          <button
+                            onClick={disconnectWallet}
+                            className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center gap-2"
+                          >
+                            <LogOut size={14} />
+                            Disconnect
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={connectWallet}
+                          disabled={isConnecting}
+                          className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all flex items-center gap-2 mt-4"
+                        >
+                          <Wallet size={14} />
+                          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                        </button>
+                      )
+                    ) : (
+                      // 普通模式 - 移动端
+                      isAuthenticated && user ? (
                       <div className="flex flex-col items-center gap-4 mt-4">
                         <button
                           onClick={() => navigate('/profile')}
@@ -162,7 +247,8 @@ const Layout: React.FC = () => {
                         <User size={14} />
                         Login / Register
                       </button>
-                    )}
+                    )
+                  )}
                 </motion.div>
             )}
         </AnimatePresence>
@@ -176,7 +262,7 @@ const Layout: React.FC = () => {
 
       {/* Footer */}
       <footer className="w-full bg-slate-900 text-slate-300 py-16 border-t border-slate-800">
-         <div className="mx-auto px-6 grid md:grid-cols-4 gap-12">
+         <div className="mx-auto px-6 grid lg:grid-cols-4 gap-12">
              <div className="col-span-2">
                  <h2 className="font-serif text-2xl text-white mb-4">K&M ERA</h2>
                  <p className="font-light text-sm leading-relaxed max-w-sm opacity-80">

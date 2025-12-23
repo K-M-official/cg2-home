@@ -56,7 +56,7 @@ const GalleryPage: React.FC = () => {
         <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider mb-6 border border-indigo-100">
            <Users className="w-4 h-4" /> Global Commemorative Community
         </div>
-        <h1 className="text-4xl md:text-6xl font-serif text-slate-900 mb-6">
+        <h1 className="text-4xl lg:text-6xl font-serif text-slate-900 mb-6">
           Remembrance Gallery
         </h1>
         <p className="text-slate-500 max-w-2xl mx-auto text-lg font-light leading-relaxed">
@@ -67,12 +67,12 @@ const GalleryPage: React.FC = () => {
 
       {/* 2. EXPLORE & FILTER */}
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6 border-b border-slate-200 pb-6">
+        <div className="flex flex-col lg:flex-row justify-between items-center mb-8 gap-6 border-b border-slate-200 pb-6">
           <h2 className="text-2xl font-serif text-slate-900 flex items-center gap-2">
             Explore Tributes
           </h2>
           
-          <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar">
+          <div className="flex gap-2 overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0 no-scrollbar">
             {/* All Button */}
             <button
               onClick={() => handleCategoryClick('All', 'All')}
@@ -107,18 +107,18 @@ const GalleryPage: React.FC = () => {
             )}
           </div>
 
-          <div className="relative w-full md:w-auto">
+          <div className="relative w-full lg:w-auto">
             <input 
               type="text" 
               placeholder="Search by name..." 
-              className="pl-9 pr-4 py-2 rounded-full bg-white border border-slate-200 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 w-full md:w-64"
+              className="pl-9 pr-4 py-2 rounded-full bg-white border border-slate-200 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 w-full lg:w-64"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           </div>
         </div>
 
         {/* 3. GRID LAYOUT */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 max-lg:grid-cols-2 lg:grid-cols-4 gap-6">
           
           {/* Create New Card */}
           <div 

@@ -3,9 +3,11 @@ import { CreateStep } from '../types';
 import { Button } from '../components/UI';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Upload, ChevronRight, ChevronLeft, Hexagon, Cloud, Lock } from 'lucide-react';
+import { useWeb3 } from '../context/Web3Context';
 
 export const CreatePage: React.FC = () => {
   const navigate = useNavigate();
+  const { isWeb3Mode } = useWeb3();
   const [step, setStep] = useState<CreateStep>(CreateStep.BASIC_INFO);
   const [loading, setLoading] = useState(false);
   
@@ -338,7 +340,26 @@ export const CreatePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center pt-24 pb-12 px-6">
-      
+
+      {/* Web3 Mode Warning */}
+      {isWeb3Mode && (
+        <div className="w-full max-w-xl mb-8 p-6 bg-indigo-50 border-2 border-indigo-200 rounded-xl">
+          <div className="flex items-center gap-3 mb-3">
+            <Wallet className="w-6 h-6 text-indigo-600" />
+            <h3 className="text-lg font-semibold text-indigo-900">Web3 Mode Active</h3>
+          </div>
+          <p className="text-sm text-indigo-700 mb-4">
+            Token creation is disabled in Web3 mode. You can only view existing tokens and their basic information.
+          </p>
+          <button
+            onClick={() => navigate('/heritage')}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors"
+          >
+            View Tokens
+          </button>
+        </div>
+      )}
+
       {/* Progress Bar */}
       <div className="w-full max-w-xl mb-12">
         <div className="flex justify-between mb-2">
@@ -357,7 +378,7 @@ export const CreatePage: React.FC = () => {
       </div>
 
       {/* Main Card */}
-      <div className="w-full max-w-xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-8 md:p-12 relative overflow-hidden min-h-[550px] flex flex-col justify-between">
+      <div className={`w-full max-w-xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-8 lg:p-12 relative overflow-hidden min-h-[550px] flex flex-col justify-between ${isWeb3Mode ? 'opacity-50 pointer-events-none' : ''}`}>
          {/* Gentle Background Blob */}
          <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
 

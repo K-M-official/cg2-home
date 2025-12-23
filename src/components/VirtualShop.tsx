@@ -43,11 +43,11 @@ export const VirtualShop: React.FC<VirtualShopProps> = ({ isOpen, onClose, onPur
             onClick={onClose}
           />
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full md:w-[600px] max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col pointer-events-auto"
+                className="w-full lg:w-[600px] max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col pointer-events-auto"
             >
                 {/* Header */}
                 <div className="bg-slate-900 text-white p-6 flex justify-between items-center shrink-0">
@@ -71,7 +71,7 @@ export const VirtualShop: React.FC<VirtualShopProps> = ({ isOpen, onClose, onPur
                 </div>
 
                 {/* Shop Grid */}
-                <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto min-h-0">
+                <div className="p-6 grid grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto min-h-0">
                 {items.map(item => (
                     <div key={item.id} className="border border-slate-100 rounded-xl p-4 flex flex-col items-center hover:shadow-lg transition-all hover:border-blue-200 group relative">
                     <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">{item.icon}</div>

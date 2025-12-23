@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './Layout';
 import HomePage from './pages/HomePage';
 import CreatePage from './pages/CreatePage';
-import MemorialPage from './pages/MemorialPage';
+import MemorialPageRouter from './components/MemorialPageRouter';
 import GalleryPage from './pages/GalleryPage';
 import HeritagePage from './pages/HeritagePage';
 import AboutPage from './pages/AboutPage';
@@ -13,6 +13,7 @@ import { PrivacyContent, TermsContent } from './components/LegalContent';
 import { GalleryProvider } from './context/GalleryContext';
 import { AuthProvider } from './context/AuthContext';
 import { UIProvider } from './context/UIContext';
+import { Web3Provider } from './context/Web3Context';
 import { ParticleIntro } from './components/ParticleIntro';
 
 const App: React.FC = () => {
@@ -27,25 +28,27 @@ const App: React.FC = () => {
       {introComplete && (
         <UIProvider>
           <AuthProvider>
-            <GalleryProvider>
-              <Router>
-                <Routes>
-                  <Route path="/" element={<Layout />}>
-                    <Route index element={<HomePage />} />
-                    <Route path="create" element={<CreatePage />} />
-                    <Route path="memorial/:id" element={<MemorialPage />} />
-                    <Route path="gallery" element={<GalleryPage />} />
-                    <Route path="heritage" element={<HeritagePage />} />
-                    <Route path="auth" element={<AuthPage />} />
-                    <Route path="profile" element={<UserProfile />} />
-                    <Route path="about" element={<AboutPage />}>
-                       <Route path="privacy" element={<PrivacyContent />} />
-                       <Route path="terms" element={<TermsContent />} />
+            <Web3Provider>
+              <GalleryProvider>
+                <Router>
+                  <Routes>
+                    <Route path="/" element={<Layout />}>
+                      <Route index element={<HomePage />} />
+                      <Route path="create" element={<CreatePage />} />
+                      <Route path="memorial/:id" element={<MemorialPageRouter />} />
+                      <Route path="gallery" element={<GalleryPage />} />
+                      <Route path="heritage" element={<HeritagePage />} />
+                      <Route path="auth" element={<AuthPage />} />
+                      <Route path="profile" element={<UserProfile />} />
+                      <Route path="about" element={<AboutPage />}>
+                         <Route path="privacy" element={<PrivacyContent />} />
+                         <Route path="terms" element={<TermsContent />} />
+                      </Route>
                     </Route>
-                  </Route>
-                </Routes>
-              </Router>
-            </GalleryProvider>
+                  </Routes>
+                </Router>
+              </GalleryProvider>
+            </Web3Provider>
           </AuthProvider>
         </UIProvider>
       )}

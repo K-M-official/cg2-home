@@ -35,17 +35,17 @@ export const HeritagePage: React.FC = () => {
           <Hexagon className="w-3.5 h-3.5" />
           <span className="text-xs font-bold tracking-[0.2em] uppercase">Immutable Heritage</span>
         </div>
-        <h1 className="text-5xl md:text-7xl font-serif text-white mb-6 leading-tight drop-shadow-2xl animate-fade-in" style={{animationDelay: '0.1s'}}>
+        <h1 className="text-5xl lg:text-7xl font-serif text-white mb-6 leading-tight drop-shadow-2xl animate-fade-in" style={{animationDelay: '0.1s'}}>
           Eternal <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-white">Proof</span> of Existence
         </h1>
-        <p className="text-lg md:text-xl text-slate-400 font-light max-w-2xl mx-auto leading-relaxed animate-fade-in" style={{animationDelay: '0.2s'}}>
+        <p className="text-lg lg:text-xl text-slate-400 font-light max-w-2xl mx-auto leading-relaxed animate-fade-in" style={{animationDelay: '0.2s'}}>
           Blockchain-backed heritage tokens ensuring memories withstand the test of time. 
           Bridging the gap between personal grief and global remembrance.
         </p>
       </div>
 
       {/* 2. TOKEN TYPES SPLIT */}
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-8 mb-32 relative z-10 animate-fade-in" style={{animationDelay: '0.3s'}}>
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-8 mb-32 relative z-10 animate-fade-in" style={{animationDelay: '0.3s'}}>
         
         {/* Private Token Card */}
         <div className="group relative bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-8 hover:bg-slate-800/40 transition-all duration-500 overflow-hidden">
@@ -105,7 +105,7 @@ export const HeritagePage: React.FC = () => {
       <div id="pom-leaderboard" className="max-w-7xl mx-auto px-6 relative z-10 animate-fade-in" style={{animationDelay: '0.4s'}}>
         
         {/* Section Title */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-slate-800 pb-8 gap-6">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-12 border-b border-slate-800 pb-8 gap-6">
           <div>
             <div className="flex items-center gap-2 text-indigo-400 mb-2">
                <Zap className="w-4 h-4 fill-indigo-400" />
@@ -120,7 +120,7 @@ export const HeritagePage: React.FC = () => {
         </div>
 
         {/* VISUAL IDENTIFIERS FOR COLUMNS - Enhanced */}
-        <div className="hidden md:grid grid-cols-12 gap-6 mb-6 px-4">
+        <div className="hidden lg:grid grid-cols-12 gap-6 mb-6 px-4">
            <div className="col-span-1"></div>
            
            {/* Person Identifier Badge */}
@@ -173,7 +173,7 @@ export const HeritagePage: React.FC = () => {
                 <div className="text-center py-12 text-slate-500">No ranking data available.</div>
              ) : (
                  leaderboard.map((item, idx) => (
-                   <div key={item.rank || idx} className="grid grid-cols-1 md:grid-cols-12 gap-6 p-6 items-center hover:bg-white/5 transition-colors group relative">
+                   <div key={item.rank || idx} className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 items-center hover:bg-white/5 transition-colors group relative">
                       
                       {/* Rank */}
                       <div className="col-span-1 flex justify-center">
@@ -222,7 +222,7 @@ export const HeritagePage: React.FC = () => {
                       {/* News Context (Mocked for now as API doesn't return news in this view) */}
                       <div className="col-span-4 pl-6 border-l border-slate-800 relative">
                          {/* Connector Line */}
-                         <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-1 h-8 bg-indigo-500/20 rounded-full hidden md:block"></div>
+                         <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-1 h-8 bg-indigo-500/20 rounded-full hidden lg:block"></div>
                          
                          {idx % 2 === 0 ? (
                           <div className="group/news cursor-pointer">
