@@ -40,6 +40,35 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('web3_mode', String(isWeb3Mode));
   }, [isWeb3Mode]);
 
+  // 页面加载时自动初始化 SDK（如果钱包已连接）
+  useEffect(() => {
+    const initSDK = async () => {
+      const { solana } = window as any;
+
+      if (!solana || !walletAddress) {
+        console.log('[SDK Init] Skipping - no wallet or not connected');
+        return;
+      }
+
+      try {
+        console.log('[SDK Init] Initializing MultiStakeSDK...');
+        const connection = new Connection('http://192.168.1.209:8899', 'confirmed');
+        const provider = new AnchorProvider(
+          connection,
+          solana,
+          { commitment: 'confirmed' }
+        );
+        const sdk = MultiStakeSDK.create(provider);
+        setMultistake(sdk);
+        console.log('[SDK Init] MultiStakeSDK initialized successfully');
+      } catch (error) {
+        console.error('[SDK Init] Failed to initialize MultiStakeSDK:', error);
+      }
+    };
+
+    initSDK();
+  }, [walletAddress]);
+
   const connectWallet = async () => {
     setIsConnecting(true);
     try {
@@ -61,7 +90,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 每次连接后重新初始化 MultiStakeSDK
       try {
-        const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+        const connection = new Connection('http://192.168.1.209:8899', 'confirmed');
         const provider = new AnchorProvider(
           connection,
           solana,
