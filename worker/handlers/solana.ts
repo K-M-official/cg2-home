@@ -20,12 +20,7 @@ export async function handleSolanaRoutes(request: Request, env: Env, path: strin
   if (path === '/api/solana/assign-to-pool' && request.method === 'POST') {
     return handleAssignToPool(request, env);
   }
-
-  // GET /api/solana/pool-tokens
-  if (path.startsWith('/api/solana/pool-tokens') && request.method === 'GET') {
-    return handleGetPoolTokens(request, env);
-  }
-
+  
   // POST /api/solana/items-by-mints
   if (path === '/api/solana/items-by-mints' && request.method === 'POST') {
     return handleGetItemsByMints(request, env);
