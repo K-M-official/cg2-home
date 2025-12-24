@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Bell, Shield, LogOut, ChevronRight, Wallet } from 'lucide-react';
+import { User, Bell, Shield, LogOut, ChevronRight, Wallet, Settings } from 'lucide-react';
 import { ModerationPanel } from '../components/admin/ModerationPanel';
 
 export const UserProfile: React.FC = () => {
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
-  const [activeSection, setActiveSection] = useState<'profile' | 'notifications' | 'moderation' | 'transactions'>('profile');
+  const [activeSection, setActiveSection] = useState<'profile' | 'notifications' | 'moderation' | 'transactions' | 'settings'>('profile');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -71,6 +71,7 @@ export const UserProfile: React.FC = () => {
     { id: 'profile', label: 'Profile', icon: User, show: true },
     { id: 'transactions', label: 'Transactions', icon: Wallet, show: true },
     { id: 'notifications', label: 'Notifications', icon: Bell, show: true },
+    { id: 'settings', label: 'Settings', icon: Settings, show: true },
     { id: 'moderation', label: 'Moderation', icon: Shield, show: isModerator },
   ];
 
@@ -132,6 +133,7 @@ export const UserProfile: React.FC = () => {
             {activeSection === 'profile' && <ProfileSection user={currentUser} />}
             {activeSection === 'transactions' && <TransactionsSection />}
             {activeSection === 'notifications' && <NotificationsSection />}
+            {activeSection === 'settings' && <SettingsSection />}
             {activeSection === 'moderation' && isModerator && <ModerationSection />}
           </div>
         </div>
@@ -627,6 +629,51 @@ const NotificationsSection: React.FC = () => {
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+// Settings Section Component
+const SettingsSection: React.FC = () => {
+  const [showIntroAlways, setShowIntroAlways] = useState(() => {
+    return localStorage.getItem('showIntroAlways') === 'true';
+  });
+
+  const handleToggle = () => {
+    const newValue = !showIntroAlways;
+    setShowIntroAlways(newValue);
+    localStorage.setItem('showIntroAlways', String(newValue));
+  };
+
+  return (
+    <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 shadow-2xl">
+      <h2 className="text-2xl font-serif text-white mb-6">Settings</h2>
+
+      <div className="space-y-6">
+        {/* 开屏页面设置 */}
+        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h3 className="font-medium text-white mb-2">Intro Animation</h3>
+              <p className="text-sm text-slate-300">
+                Show the particle intro animation every time you visit the site
+              </p>
+            </div>
+            <button
+              onClick={handleToggle}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                showIntroAlways ? 'bg-indigo-500' : 'bg-slate-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  showIntroAlways ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Hexagon, Globe, Wallet, ExternalLink } from 'lucide-react';
 import { useWeb3 } from '../context/Web3Context';
+import { PublicKey } from '@solana/web3.js';
+
 
 interface ItemData {
   id: number;
@@ -17,12 +19,16 @@ interface SolanaMapping {
   pool_address: string | null;
 }
 
+const WSOL_MINT_ADDRESS = new PublicKey('So11111111111111111111111111111111111111112');
+
 const Web3MemorialPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { walletAddress } = useWeb3();
+  const { walletAddress, multistake } = useWeb3();
   const [item, setItem] = useState<ItemData | null>(null);
   const [solanaMapping, setSolanaMapping] = useState<SolanaMapping | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creatingPool, setCreatingPool] = useState(false);
+  const [poolResult, setPoolResult] = useState<{ pool: string; signature: string } | null>(null);
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -53,6 +59,35 @@ const Web3MemorialPage: React.FC = () => {
       fetchItem();
     }
   }, [id]);
+
+  const handleCreatePool = async () => {
+    if (!multistake || !walletAddress) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    setCreatingPool(true);
+    try {
+      console.log('Creating pool with MultiStakeSDK...');
+      const result = await multistake.createPool(WSOL_MINT_ADDRESS, {
+        feeNumerator: 0,
+        feeDenominator: 10000,
+      });
+
+      setPoolResult({
+        pool: result.pool.toString(),
+        signature: result.signature
+      });
+
+      console.log('Pool created successfully:', result);
+      alert('Pool created successfully!');
+    } catch (error) {
+      console.error('Failed to create pool:', error);
+      alert(`Failed to create pool: ${error}`);
+    } finally {
+      setCreatingPool(false);
+    }
+  };
 
   if (loading) {
     return (

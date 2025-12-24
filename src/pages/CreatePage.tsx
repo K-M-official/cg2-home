@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CreateStep } from '../types';
 import { Button } from '../components/UI';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Upload, ChevronRight, ChevronLeft, Hexagon, Cloud, Lock } from 'lucide-react';
+import { Sparkles, Upload, ChevronRight, ChevronLeft, Hexagon, Cloud, Lock, Wallet } from 'lucide-react';
 import { useWeb3 } from '../context/Web3Context';
 
 export const CreatePage: React.FC = () => {

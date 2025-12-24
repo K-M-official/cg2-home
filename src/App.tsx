@@ -17,12 +17,30 @@ import { Web3Provider } from './context/Web3Context';
 import { ParticleIntro } from './components/ParticleIntro';
 
 const App: React.FC = () => {
-  const [introComplete, setIntroComplete] = useState(false);
+  const [introComplete, setIntroComplete] = useState(() => {
+    // 检查用户设置
+    const showIntroAlways = localStorage.getItem('showIntroAlways') === 'true';
+    const hasSeenIntro = localStorage.getItem('hasSeenIntro') === 'true';
+
+    // 如果设置为总是显示，或者从未看过，则显示开屏动画
+    if (showIntroAlways || !hasSeenIntro) {
+      return false;
+    }
+
+    // 否则跳过开屏动画
+    return true;
+  });
+
+  const handleIntroComplete = () => {
+    setIntroComplete(true);
+    // 标记用户已经看过开屏动画
+    localStorage.setItem('hasSeenIntro', 'true');
+  };
 
   return (
     <>
       {!introComplete && (
-        <ParticleIntro onEnter={() => setIntroComplete(true)} />
+        <ParticleIntro onEnter={handleIntroComplete} />
       )}
 
       {introComplete && (

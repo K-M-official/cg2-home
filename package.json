@@ -15,11 +15,19 @@
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
-		"@google/genai": "^1.30.0",
+		"@coral-xyz/anchor": "^0.32.1",
+		"@solana/spl-token": "^0.4.8",
+		"@solana/wallet-adapter-base": "^0.9.23",
+		"@solana/wallet-adapter-react": "^0.15.35",
+		"@solana/wallet-adapter-react-ui": "^0.9.35",
+		"@solana/wallet-adapter-wallets": "^0.19.32",
+		"@solana/web3.js": "^1.98.4",
 		"arweave": "^1.15.7",
+		"buffer": "^6.0.3",
 		"class-variance-authority": "^0.7.1",
 		"framer-motion": "^12.23.24",
 		"lucide-react": "^0.555.0",
+		"multistake": "^0.1.1",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
 		"react-router-dom": "^7.9.6",
@@ -28,6 +36,7 @@
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "^1.15.3",
 		"@eslint/js": "^9.33.0",
+		"@types/node": "^25.0.3",
 		"@types/react": "^19.1.10",
 		"@types/react-dom": "^19.1.7",
 		"@vitejs/plugin-react-swc": "^4.0.0",

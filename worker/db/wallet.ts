@@ -2,7 +2,7 @@
  * 用户钱包相关数据库操作
  */
 
-import Arweave from "arweave";
+import Arweave from "arweave/web";
 import type { JWKInterface } from "arweave/web/lib/wallet";
 
 const arweave = new Arweave({

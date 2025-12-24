@@ -7,6 +7,7 @@ import { handleWalletRoutes } from './handlers/wallet';
 import { handleSolanaRoutes } from './handlers/solana';
 import { process_pending_execution, process_pending_confirmation } from './cron';
 
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
@@ -130,6 +131,16 @@ async function handleDebugRoutes(request: Request, env: Env, path: string): Prom
     return handleDebugGetR2Image(request, env, path);
   }
 
+  // 给用户增加余额
+  if (path.startsWith('/api/debug/balance/add') && request.method === 'GET') {
+    return handleDebugAddBalance(request, env);
+  }
+
+  // 清除用户余额
+  if (path.startsWith('/api/debug/balance/clear') && request.method === 'GET') {
+    return handleDebugClearBalance(request, env);
+  }
+
   return new Response(JSON.stringify({ error: 'NOT_FOUND' }), {
     status: 404,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -186,6 +197,141 @@ async function handleDebugGetR2Image(request: Request, env: Env, path: string): 
     });
   } catch (error) {
     console.error('❌ Error in handleDebugGetR2Image:', error);
+    return new Response(
+      JSON.stringify({ error: 'INTERNAL_ERROR', message: String(error) }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+/**
+ * Debug模式专属：给用户增加余额
+ * GET /api/debug/balance/add?email={email}&amount={amount}
+ */
+async function handleDebugAddBalance(request: Request, env: Env): Promise<Response> {
+  try {
+    if (!env.DEV) {
+      return new Response(
+        JSON.stringify({ error: 'FORBIDDEN', message: 'This endpoint is only available in development mode' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const url = new URL(request.url);
+    const email = url.searchParams.get('email');
+    const amount = url.searchParams.get('amount');
+
+    if (!email || !amount) {
+      return new Response(
+        JSON.stringify({ error: 'INVALID_PARAMS', message: 'Email and amount are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const amountNum = parseInt(amount, 10);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return new Response(
+        JSON.stringify({ error: 'INVALID_PARAMS', message: 'Amount must be a positive number' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`🔍 Debug: Adding ${amountNum} balance to user ${email}`);
+
+    // 查询用户
+    const user = await env.DB.prepare('SELECT id, balance FROM users WHERE email = ?').bind(email).first();
+
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'NOT_FOUND', message: 'User not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const currentBalance = user.balance as number || 0;
+    const newBalance = currentBalance + amountNum;
+
+    // 更新余额
+    await env.DB.prepare('UPDATE users SET balance = ? WHERE email = ?')
+      .bind(newBalance, email)
+      .run();
+
+    console.log(`✅ Debug: Balance updated for ${email}: ${currentBalance} -> ${newBalance}`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        email,
+        previousBalance: currentBalance,
+        addedAmount: amountNum,
+        newBalance
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('❌ Error in handleDebugAddBalance:', error);
+    return new Response(
+      JSON.stringify({ error: 'INTERNAL_ERROR', message: String(error) }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+/**
+ * Debug模式专属：清除用户余额
+ * GET /api/debug/balance/clear?email={email}
+ */
+async function handleDebugClearBalance(request: Request, env: Env): Promise<Response> {
+  try {
+    if (!env.DEV) {
+      return new Response(
+        JSON.stringify({ error: 'FORBIDDEN', message: 'This endpoint is only available in development mode' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const url = new URL(request.url);
+    const email = url.searchParams.get('email');
+
+    if (!email) {
+      return new Response(
+        JSON.stringify({ error: 'INVALID_PARAMS', message: 'Email is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`🔍 Debug: Clearing balance for user ${email}`);
+
+    // 查询用户
+    const user = await env.DB.prepare('SELECT id, balance FROM users WHERE email = ?').bind(email).first();
+
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'NOT_FOUND', message: 'User not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const previousBalance = user.balance as number || 0;
+
+    // 清除余额（设置为0）
+    await env.DB.prepare('UPDATE users SET balance = 0 WHERE email = ?')
+      .bind(email)
+      .run();
+
+    console.log(`✅ Debug: Balance cleared for ${email}: ${previousBalance} -> 0`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        email,
+        previousBalance,
+        newBalance: 0
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('❌ Error in handleDebugClearBalance:', error);
     return new Response(
       JSON.stringify({ error: 'INTERNAL_ERROR', message: String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
