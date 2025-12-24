@@ -90,7 +90,11 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 每次连接后重新初始化 MultiStakeSDK
       try {
-        const connection = new Connection('http://192.168.1.209:8899', 'confirmed');
+        let endpoint = 'http://192.168.1.209:8899';
+        if (window.location.hostname !== 'localhost') {
+          endpoint = 'https://api.devnet.solana.com';
+        }
+        const connection = new Connection(endpoint, 'confirmed');
         const provider = new AnchorProvider(
           connection,
           solana,
