@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Filter, Search } from 'lucide-react';
+import { API_BASE_URL } from '../../constants';
 
 type ContentType = 'gallery' | 'timeline' | 'tribute';
 type FilterType = 'all' | 'my_reviews' | 'pending' | 'approved' | 'rejected' | 'my_rejected';
@@ -37,7 +38,7 @@ export const ModerationPanel: React.FC = () => {
   const loadStats = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/admin/moderation-stats', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/moderation-stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -52,7 +53,7 @@ export const ModerationPanel: React.FC = () => {
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(
-        `/api/admin/moderation?type=${contentType}&filter=${filter}`,
+        `${API_BASE_URL}/api/admin/moderation?type=${contentType}&filter=${filter}`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }
@@ -69,7 +70,7 @@ export const ModerationPanel: React.FC = () => {
   const handleModerate = async (id: number, action: 'approve' | 'reject', reason?: string) => {
     try {
       const token = localStorage.getItem('auth_token');
-      await fetch('/api/admin/moderate', {
+      await fetch(`${API_BASE_URL}/api/admin/moderate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

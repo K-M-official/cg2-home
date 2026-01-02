@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MultiStakeSDK } from 'multistake';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { AnchorProvider } from '@coral-xyz/anchor';
+import { SOLANA_ENDPOINT } from '../constants';
 
 interface Web3ContextType {
   isWeb3Mode: boolean;
@@ -11,6 +12,25 @@ interface Web3ContextType {
   disconnectWallet: () => void;
   isConnecting: boolean;
   multistake: MultiStakeSDK | null;
+}
+
+function makeSDK() {
+  const { solana } = window as any;
+
+  if (!solana || !solana.isPhantom) {
+    console.error('Please install Phantom wallet: https://phantom.app/');
+    window.open('https://phantom.app/', '_blank');
+    return null;
+  }
+
+  const connection = new Connection(SOLANA_ENDPOINT, 'confirmed');
+  const provider = new AnchorProvider(
+    connection,
+    solana,
+    { commitment: 'confirmed' }
+  );
+
+  return MultiStakeSDK.create(provider);
 }
 
 const Web3Context = createContext<Web3ContextType | undefined>(undefined);
@@ -43,30 +63,12 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
   // 页面加载时自动初始化 SDK（如果钱包已连接）
   useEffect(() => {
     const initSDK = async () => {
-      const { solana } = window as any;
-
-      if (!solana || !walletAddress) {
-        console.log('[SDK Init] Skipping - no wallet or not connected');
-        return;
-      }
-
-      try {
-        console.log('[SDK Init] Initializing MultiStakeSDK...');
-        let endpoint = 'http://192.168.1.209:8899';
-        if (window.location.hostname !== 'localhost') {
-          endpoint = 'https://api.devnet.solana.com';
-        }
-        const connection = new Connection(endpoint, 'confirmed');
-        const provider = new AnchorProvider(
-          connection,
-          solana,
-          { commitment: 'confirmed' }
-        );
-        const sdk = MultiStakeSDK.create(provider);
+       const sdk = makeSDK();
+      if (sdk) {
         setMultistake(sdk);
-        console.log('[SDK Init] MultiStakeSDK initialized successfully');
-      } catch (error) {
-        console.error('[SDK Init] Failed to initialize MultiStakeSDK:', error);
+        console.log('MultiStakeSDK initialized successfully');
+      } else {
+        console.error('Failed to initialize MultiStakeSDK');
       }
     };
 
@@ -79,7 +81,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       const { solana } = window as any;
 
       if (!solana || !solana.isPhantom) {
-        alert('Please install Phantom wallet: https://phantom.app/');
+        console.error('Please install Phantom wallet: https://phantom.app/');
         window.open('https://phantom.app/', '_blank');
         return;
       }
@@ -93,26 +95,13 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Connected to wallet:', address);
 
       // 每次连接后重新初始化 MultiStakeSDK
-      try {
-        let endpoint = 'http://192.168.1.209:8899';
-        if (window.location.hostname !== 'localhost') {
-          endpoint = 'https://api.devnet.solana.com';
-        }
-        const connection = new Connection(endpoint, 'confirmed');
-        const provider = new AnchorProvider(
-          connection,
-          solana,
-          { commitment: 'confirmed' }
-        );
-        const sdk = MultiStakeSDK.create(provider);
+      const sdk = makeSDK();  
+      if (sdk) {
         setMultistake(sdk);
         console.log('MultiStakeSDK initialized successfully');
-      } catch (sdkError) {
-        console.error('Failed to initialize MultiStakeSDK:', sdkError);
+      } else {
+        console.error('Failed to initialize MultiStakeSDK');
       }
-    } catch (error) {
-      console.error('Failed to connect wallet:', error);
-      alert('Failed to connect wallet');
     } finally {
       setIsConnecting(false);
     }

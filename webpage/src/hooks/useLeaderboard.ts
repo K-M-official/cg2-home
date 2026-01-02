@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { LeaderboardEntry } from '../types';
-import { MOCK_MEMORIALS } from '../constants';
+import { MOCK_MEMORIALS, API_BASE_URL } from '../constants';
 
 interface LeaderboardApiItem {
   rank: number;
@@ -77,7 +77,7 @@ export const useLeaderboard = (limit: number = 10) => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/leaderboard?limit=${limit}`);
+      const response = await fetch(`${API_BASE_URL}/api/leaderboard?limit=${limit}`);
       
       if (!response.ok) {
         // 尝试解析错误响应

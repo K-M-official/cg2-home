@@ -7,6 +7,7 @@ import { VirtualShop } from '../components/VirtualShop';
 import { useGallery } from '../context/GalleryContext';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
+import { API_BASE_URL } from '../constants';
 
 // ==================== Sub Components ====================
 
@@ -618,7 +619,7 @@ const MemorialPage: React.FC = () => {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/content/gallery', {
+      const response = await fetch(`${API_BASE_URL}/api/content/gallery`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -644,7 +645,7 @@ const MemorialPage: React.FC = () => {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/content/timeline', {
+      const response = await fetch(`${API_BASE_URL}/api/content/timeline`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -680,7 +681,7 @@ const MemorialPage: React.FC = () => {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/content/tribute', {
+      const response = await fetch(`${API_BASE_URL}/api/content/tribute`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

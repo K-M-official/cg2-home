@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { API_BASE_URL } from '../constants';
 
 interface User {
   id: number;
@@ -22,8 +23,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE = '';  // 使用相对路径，因为前后端在同一域名下
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -42,7 +41,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // 验证token
   const verifyToken = async (tokenToVerify: string) => {
     try {
-      const response = await fetch(`${API_BASE}/api/auth/verify`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
         headers: {
           'Authorization': `Bearer ${tokenToVerify}`
         }
@@ -71,7 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // 登录
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch(`${API_BASE}/api/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -98,7 +97,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // 发送验证码
   const sendVerificationCode = async (email: string) => {
     try {
-      const response = await fetch(`${API_BASE}/api/auth/send-code`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/send-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -122,7 +121,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // 注册（需要验证码）
   const register = async (email: string, password: string, code: string) => {
     try {
-      const response = await fetch(`${API_BASE}/api/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -156,7 +155,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // 忘记密码（发送验证码）
   const forgotPassword = async (email: string) => {
     try {
-      const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -180,7 +179,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // 重置密码（使用验证码）
   const resetPassword = async (email: string, code: string, password: string) => {
     try {
-      const response = await fetch(`${API_BASE}/api/auth/reset-password`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, Bell, Shield, LogOut, ChevronRight, Wallet, Settings } from 'lucide-react';
 import { ModerationPanel } from '../components/admin/ModerationPanel';
+import { API_BASE_URL } from '../constants';
 
 export const UserProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export const UserProfile: React.FC = () => {
           return;
         }
 
-        const response = await fetch('/api/auth/verify', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -151,7 +152,7 @@ const ProfileSection: React.FC<{ user: any }> = ({ user }) => {
     const fetchWallet = async () => {
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await fetch('/api/wallet', {
+        const response = await fetch(`${API_BASE_URL}/api/wallet`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -262,8 +263,8 @@ const TransactionsSection: React.FC = () => {
     try {
       const token = localStorage.getItem('auth_token');
       const url = filter
-        ? `/api/wallet/arweave-transactions?status=${filter}`
-        : '/api/wallet/arweave-transactions';
+        ? `${API_BASE_URL}/api/wallet/arweave-transactions?status=${filter}`
+        : `${API_BASE_URL}/api/wallet/arweave-transactions`;
 
       const response = await fetch(url, {
         headers: {
@@ -286,7 +287,7 @@ const TransactionsSection: React.FC = () => {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/wallet/arweave-transactions/${txId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/wallet/arweave-transactions/${txId}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -534,7 +535,7 @@ const NotificationsSection: React.FC = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/user/notifications?unread_only=${filter === 'unread'}`, {
+      const response = await fetch(`${API_BASE_URL}/api/user/notifications?unread_only=${filter === 'unread'}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -551,7 +552,7 @@ const NotificationsSection: React.FC = () => {
   const markAsRead = async (id: number) => {
     try {
       const token = localStorage.getItem('auth_token');
-      await fetch(`/api/user/notifications/${id}/read`, {
+      await fetch(`${API_BASE_URL}/api/user/notifications/${id}/read`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

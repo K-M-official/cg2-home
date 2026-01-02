@@ -3,7 +3,11 @@ import { useParams } from 'react-router-dom';
 import { Hexagon, Globe, Wallet, ExternalLink } from 'lucide-react';
 import { useWeb3 } from '../context/Web3Context';
 import { PublicKey } from '@solana/web3.js';
-import type { MultiStakeSDK } from 'multistake';
+import { API_BASE_URL } from '../constants';
+import type { PoolInfo, TokenInfo } from 'multistake';
+import { AnchorProvider, BN } from '@coral-xyz/anchor';
+import { createSyncNativeInstruction, getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, NATIVE_MINT } from '@solana/spl-token';
+import { Transaction, SystemProgram } from '@solana/web3.js';
 
 
 interface ItemData {
@@ -16,8 +20,8 @@ interface ItemData {
 }
 
 interface SolanaMapping {
-  mint_address: string | null;
-  pool_address: string | null;
+  mint_address: string;
+  pool_address: string;
 }
 
 const WSOL_MINT_ADDRESS = new PublicKey('So11111111111111111111111111111111111111112');
@@ -50,61 +54,142 @@ const PoolTokensList: React.FC<PoolTokensListProps> = ({ tokens }) => {
   );
 };
 
-// StakeUnstakePanel Component
+
+
+const handleWrapSOL = async (wallet: AnchorProvider, stakeAmount: string) => {
+  if (!wallet.publicKey) return;
+
+  try {
+    const amount = parseInt(stakeAmount);
+    // Get WSOL associated token account
+    const wsolAccount = await getAssociatedTokenAddress(
+      NATIVE_MINT,
+      wallet.publicKey
+    );
+
+    const transaction = new Transaction();
+
+    // Check if WSOL account exists
+    const accountInfo = await wallet.connection.getAccountInfo(wsolAccount);
+    if (!accountInfo) {
+      // Create WSOL account
+      transaction.add(
+        createAssociatedTokenAccountInstruction(
+          wallet.publicKey,
+          wsolAccount,
+          wallet.publicKey,
+          NATIVE_MINT
+        )
+      );
+    }
+
+    // Transfer SOL to WSOL account
+    transaction.add(
+      SystemProgram.transfer({
+        fromPubkey: wallet.publicKey,
+        toPubkey: wsolAccount,
+        lamports: amount * 1e9, // Convert SOL to lamports
+      })
+    );
+
+    // Sync native (wrap SOL)
+    transaction.add(createSyncNativeInstruction(wsolAccount));
+
+    // Send transaction
+    const signature = await wallet.sendAndConfirm(transaction);
+    return signature
+  } catch (error: any) {
+    console.error('Full error:', error);
+  }
+};// StakeUnstakePanel Component
+
 interface StakeUnstakePanelProps {
   solanaMapping: SolanaMapping;
-  allPoolTokens: Array<{ item_id: number; title: string; mint_address: string }>;
-  walletAddress: string | null;
+  poolInfo: PoolInfo & { items: Array<TokenInfo> };
 }
 
-const StakeUnstakePanel: React.FC<StakeUnstakePanelProps> = ({ solanaMapping, allPoolTokens, walletAddress }) => {
+const StakeUnstakePanel: React.FC<StakeUnstakePanelProps> = ({ solanaMapping, poolInfo }) => {
   const [stakeAmount, setStakeAmount] = useState('');
-  const { multistake } = useWeb3();
+  const { multistake, walletAddress } = useWeb3();
   const [staking, setStaking] = useState(false);
   const [unstaking, setUnstaking] = useState(false);
+  const [allPoolTokens, setAllPoolTokens] = useState<Array<{ item_id: number; mint_address: string; title: string }>>([]);
   const [operationLogs, setOperationLogs] = useState<Array<{ time: string; operation: string; message: string; signature?: string }>>([]);
 
+  const poolPubkey = new PublicKey(solanaMapping.pool_address);
+  const mintPubkey = new PublicKey(solanaMapping.mint_address);
+  const itemIndex = allPoolTokens.findIndex(token => token.mint_address === solanaMapping.mint_address);
+  const thisItemInfo = { ...poolInfo.items[itemIndex], ...allPoolTokens[itemIndex] };
+
+  useEffect(() => {
+    const loadTokengroups = async () => {
+      const mintAddresses = poolInfo.items.map(token => token.mintAccount.toString());
+      console.log('[fetchPoolTokens] Mint addresses from pool:', mintAddresses);
+      if (mintAddresses.length === 0) {
+        console.log('[fetchPoolTokens] No tokens in pool');
+        return;
+      }
+      const itemsResponse = await fetch(`${API_BASE_URL}/api/solana/items-by-mints`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mint_addresses: mintAddresses }),
+      });
+      if (itemsResponse.ok) {
+        const itemsData = await itemsResponse.json();
+        console.log('[fetchPoolTokens] Backend data:', itemsData);
+
+        if (itemsData.tokens) {
+          console.log('[fetchPoolTokens] All tokens:', itemsData.tokens);
+          // 设置完整列表（包括当前 token）
+          setAllPoolTokens(itemsData.tokens);
+        } else {
+          console.log('[fetchPoolTokens] No tokens in response');
+        }
+      } else {
+        console.error('[fetchPoolTokens] Backend request failed:', await itemsResponse.text());
+      }
+    }
+    loadTokengroups();
+  }, [multistake]);
+
+
   const handleStake = async () => {
-    if (!multistake || !walletAddress || !solanaMapping?.pool_address || !stakeAmount || parseFloat(stakeAmount) <= 0) {
-      alert('Please check wallet connection, pool address and amount');
+    if (!multistake || !walletAddress) {
+      console.error('Please check wallet connection, pool address and amount');
       return;
     }
     setStaking(true);
     try {
-      const poolPubkey = new PublicKey(solanaMapping.pool_address);
-      const amount = parseFloat(stakeAmount);
-      const itemIndex = allPoolTokens.findIndex(token => token.mint_address === solanaMapping.mint_address);
-      const lpMint = new PublicKey(allPoolTokens[itemIndex].mint_address);
-      const result = await multistake.stake(poolPubkey, itemIndex, lpMint, amount);
+      const amount = parseFloat(stakeAmount) * 1e9; // Assuming 9 decimals
+      const amountBN = new BN(amount);
+      const result = await multistake.stake(poolPubkey, itemIndex, mintPubkey, amountBN);
       setOperationLogs(prev => [{ time: new Date().toLocaleTimeString(), operation: 'Stake', message: `Staked ${amount} tokens successfully` }, ...prev]);
-      alert('Stake successful!');
+      console.log('Stake successful!');
       setStakeAmount('');
     } catch (error) {
       setOperationLogs(prev => [{ time: new Date().toLocaleTimeString(), operation: 'Stake', message: `Failed: ${error}` }, ...prev]);
-      alert(`Failed to stake: ${error}`);
+      console.error(`Failed to stake: ${error}`);
     } finally {
       setStaking(false);
     }
   };
 
   const handleUnstake = async () => {
-    if (!multistake || !walletAddress || !solanaMapping?.pool_address || !stakeAmount || parseFloat(stakeAmount) <= 0) {
-      alert('Please check wallet connection, pool address and amount');
+    if (!multistake || !walletAddress) {
+      console.error('Please check wallet connection, pool address and amount');
       return;
     }
     setUnstaking(true);
     try {
-      const poolPubkey = new PublicKey(solanaMapping.pool_address);
-      const amount = parseFloat(stakeAmount);
-      const itemIndex = allPoolTokens.findIndex(token => token.mint_address === solanaMapping.mint_address);
-      const lpMint = new PublicKey(allPoolTokens[itemIndex].mint_address);
-      const result = await multistake.unstake(poolPubkey, itemIndex, lpMint, amount);
+      const amount = parseFloat(stakeAmount) * 1e9; // Assuming 9 decimals
+      const amountBN = new BN(amount);
+      const result = await multistake.unstake(poolPubkey, itemIndex, mintPubkey, amountBN);
       setOperationLogs(prev => [{ time: new Date().toLocaleTimeString(), operation: 'Unstake', message: `Unstaked ${amount} tokens successfully` }, ...prev]);
-      alert('Unstake successful!');
+      console.error('Unstake successful!');
       setStakeAmount('');
     } catch (error) {
       setOperationLogs(prev => [{ time: new Date().toLocaleTimeString(), operation: 'Unstake', message: `Failed: ${error}` }, ...prev]);
-      alert(`Failed to unstake: ${error}`);
+      console.error(`Failed to unstake: ${error}`);
     } finally {
       setUnstaking(false);
     }
@@ -112,28 +197,38 @@ const StakeUnstakePanel: React.FC<StakeUnstakePanelProps> = ({ solanaMapping, al
 
   return (
     <div className="space-y-4">
-      {solanaMapping.pool_address && (
-        <div>
-          <label className="text-sm text-slate-400 block mb-2">Pool Address</label>
+      <div>
+        <label className="text-sm text-slate-400 block mb-2">Pool Address</label>
+        <div className="flex items-center gap-2 bg-black/20 rounded-lg p-3">
+          <code className="text-indigo-300 text-sm flex-1 break-all">{solanaMapping.pool_address}</code>
+          <a href={`https://solscan.io/account/${solanaMapping.pool_address}`} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
+      </div>
+      <div>
+        <label className="text-sm text-slate-400 block mb-2">Mint Address</label>
+        <div className="flex items-center gap-2 bg-black/20 rounded-lg p-3">
+          <code className="text-indigo-300 text-sm flex-1 break-all">{solanaMapping.mint_address}</code>
+          <a href={`https://solscan.io/token/${solanaMapping.mint_address}`} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
+      </div>
+      <div className='flex flex-row gap-2 w-full'>
+        <div className='flex-1'>
+          <label className="text-sm text-slate-400 block mb-2">Weight</label>
           <div className="flex items-center gap-2 bg-black/20 rounded-lg p-3">
-            <code className="text-indigo-300 text-sm flex-1 break-all">{solanaMapping.pool_address}</code>
-            <a href={`https://solscan.io/account/${solanaMapping.pool_address}`} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">
-              <ExternalLink className="w-4 h-4" />
-            </a>
+            <code className="text-indigo-300 text-sm flex-1 break-all">{`${thisItemInfo.weight}`}</code>
           </div>
         </div>
-      )}
-      {solanaMapping.mint_address && (
-        <div>
-          <label className="text-sm text-slate-400 block mb-2">Mint Address</label>
+        <div className='flex-1'>
+          <label className="text-sm text-slate-400 block mb-2">Mint Amount</label>
           <div className="flex items-center gap-2 bg-black/20 rounded-lg p-3">
-            <code className="text-indigo-300 text-sm flex-1 break-all">{solanaMapping.mint_address}</code>
-            <a href={`https://solscan.io/token/${solanaMapping.mint_address}`} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">
-              <ExternalLink className="w-4 h-4" />
-            </a>
+            <code className="text-indigo-300 text-sm flex-1 break-all">{`${thisItemInfo.mintAmount}`}</code>
           </div>
         </div>
-      )}
+      </div>
       <div>
         <label className="text-sm text-slate-400 block mb-2">Stake/Unstake</label>
         <div className="space-y-3">
@@ -168,32 +263,29 @@ const StakeUnstakePanel: React.FC<StakeUnstakePanelProps> = ({ solanaMapping, al
           </div>
         </div>
       )}
+      <PoolTokensList tokens={allPoolTokens} />
+      <button onClick={() => {
+        handleWrapSOL(multistake!.getProvider(), '100');
+      }}>handle wsol</button>
     </div>
   );
 };
 
-// CreatePool Component
-interface CreatePoolProps {
-  walletAddress: string | null;
-  multistake: any;
-}
-
-const CreatePool: React.FC<CreatePoolProps> = ({ walletAddress, multistake }) => {
+const CreatePool: React.FC = () => {
   const [creatingPool, setCreatingPool] = useState(false);
+  const { multistake, walletAddress } = useWeb3();
   const [poolResult, setPoolResult] = useState<{ pool: string; signature: string } | null>(null);
 
   const handleCreatePool = async () => {
     if (!multistake || !walletAddress) {
-      alert('Please connect your wallet first');
+      console.error('Please connect your wallet first');
       return;
     }
     setCreatingPool(true);
     try {
-      const result = await multistake.createPool(new PublicKey('So11111111111111111111111111111111111111112'), { feeNumerator: 0, feeDenominator: 10000 });
+      const result = await multistake.createPool(WSOL_MINT_ADDRESS, { feeNumerator: 0, feeDenominator: 10000 });
       setPoolResult({ pool: result.pool.toString(), signature: result.signature });
-      alert('Pool created successfully!');
-    } catch (error) {
-      alert(`Failed to create pool: ${error}`);
+      console.error('Pool created successfully!');
     } finally {
       setCreatingPool(false);
     }
@@ -232,19 +324,18 @@ const CreatePool: React.FC<CreatePoolProps> = ({ walletAddress, multistake }) =>
 // AssignToPool Component
 interface AssignToPoolProps {
   itemId: number;
-  walletAddress: string | null;
   onAssignSuccess: () => void;
 }
 
-const AssignToPool: React.FC<AssignToPoolProps> = ({ itemId, walletAddress, onAssignSuccess }) => {
-  const { multistake } = useWeb3();
+const AssignToPool: React.FC<AssignToPoolProps> = ({ itemId, onAssignSuccess }) => {
+  const { multistake, walletAddress } = useWeb3();
   const [poolAddress, setPoolAddress] = useState('');
   const [assigning, setAssigning] = useState(false);
   const [assignResult, setAssignResult] = useState<{ mint: string; signature: string } | null>(null);
 
   const handleAssignToPool = async () => {
     if (!multistake || !walletAddress || !poolAddress) {
-      alert('Please connect your wallet and enter a pool address');
+      console.error('Please connect your wallet and enter a pool address');
       return;
     }
 
@@ -256,7 +347,7 @@ const AssignToPool: React.FC<AssignToPoolProps> = ({ itemId, walletAddress, onAs
       const result = await multistake.addTokenToPool(poolPubkey);
 
       // Save to database
-      const response = await fetch('/api/solana/assign-to-pool', {
+      const response = await fetch(`${API_BASE_URL}/api/solana/assign-to-pool`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -272,10 +363,10 @@ const AssignToPool: React.FC<AssignToPoolProps> = ({ itemId, walletAddress, onAs
       }
 
       setAssignResult({ mint: result.lpMint.toString(), signature: result.signature });
-      alert('Token assigned to pool successfully!');
+      console.error('Token assigned to pool successfully!');
       onAssignSuccess();
     } catch (error) {
-      alert(`Failed to assign token: ${error}`);
+      console.error(`Failed to assign token: ${error}`);
     } finally {
       setAssigning(false);
     }
@@ -327,17 +418,16 @@ const AssignToPool: React.FC<AssignToPoolProps> = ({ itemId, walletAddress, onAs
 
 const Web3MemorialPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { walletAddress, multistake } = useWeb3();
+  const { multistake } = useWeb3();
   const [item, setItem] = useState<ItemData | null>(null);
   const [solanaMapping, setSolanaMapping] = useState<SolanaMapping | null>(null);
   const [loading, setLoading] = useState(true);
-  const [allPoolTokens, setAllPoolTokens] = useState<Array<{ item_id: number; title: string; mint_address: string }>>([]);
-  const [otherPoolTokens, setOtherPoolTokens] = useState<Array<{ item_id: number; title: string; mint_address: string }>>([]);
+  const [poolInfo, setPoolInfo] = useState<PoolInfo & { items: Array<TokenInfo> } | null>(null);
 
   useEffect(() => {
     const fetchItem = async () => {
       try {
-        const response = await fetch(`/api/item/stats?item_id=${id}`);
+        const response = await fetch(`${API_BASE_URL}/api/item/stats?item_id=${id}`);
         const data = await response.json();
 
         if (data.item) {
@@ -345,7 +435,7 @@ const Web3MemorialPage: React.FC = () => {
         }
 
         // 获取 Solana mapping
-        const solanaResponse = await fetch(`/api/solana/mapping/${id}`);
+        const solanaResponse = await fetch(`${API_BASE_URL}/api/solana/mapping/${id}`);
         if (solanaResponse.ok) {
           const solanaData = await solanaResponse.json();
           if (solanaData.mapping) {
@@ -367,12 +457,6 @@ const Web3MemorialPage: React.FC = () => {
   // 获取 pool tokens
   useEffect(() => {
     const fetchPoolTokens = async () => {
-      console.log('[fetchPoolTokens] Starting...', {
-        hasMultistake: !!multistake,
-        poolAddress: solanaMapping?.pool_address,
-        currentItemId: id
-      });
-
       if (!multistake || !solanaMapping?.pool_address) {
         console.log('[fetchPoolTokens] Missing multistake or pool_address, skipping');
         return;
@@ -380,48 +464,8 @@ const Web3MemorialPage: React.FC = () => {
 
       try {
         const poolPubkey = new PublicKey(solanaMapping.pool_address);
-        console.log('[fetchPoolTokens] Fetching pool info from blockchain...');
         const poolInfo = await multistake.getPoolInfo(poolPubkey);
-        console.log('[fetchPoolTokens] Pool info received:', poolInfo);
-
-        const mintAddresses = poolInfo.items.map(token => token.mintAccount.toString());
-        console.log('[fetchPoolTokens] Mint addresses from pool:', mintAddresses);
-
-        if (mintAddresses.length === 0) {
-          console.log('[fetchPoolTokens] No tokens in pool');
-          return;
-        }
-
-        console.log('[fetchPoolTokens] Fetching items from backend...');
-        const itemsResponse = await fetch('/api/solana/items-by-mints', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mint_addresses: mintAddresses }),
-        });
-
-        console.log('[fetchPoolTokens] Backend response status:', itemsResponse.status);
-
-        if (itemsResponse.ok) {
-          const itemsData = await itemsResponse.json();
-          console.log('[fetchPoolTokens] Backend data:', itemsData);
-
-          if (itemsData.tokens) {
-            console.log('[fetchPoolTokens] All tokens:', itemsData.tokens);
-            // 设置完整列表（包括当前 token）
-            setAllPoolTokens(itemsData.tokens);
-
-            // 设置过滤后的列表（不包括当前 token）
-            const filteredTokens = itemsData.tokens.filter(
-              (token: { item_id: number }) => token.item_id !== parseInt(id || '0', 10)
-            );
-            console.log('[fetchPoolTokens] Filtered tokens (excluding current):', filteredTokens);
-            setOtherPoolTokens(filteredTokens);
-          } else {
-            console.log('[fetchPoolTokens] No tokens in response');
-          }
-        } else {
-          console.error('[fetchPoolTokens] Backend request failed:', await itemsResponse.text());
-        }
+        setPoolInfo(poolInfo);
       } catch (error) {
         console.error('[fetchPoolTokens] Error:', error);
       }
@@ -432,7 +476,7 @@ const Web3MemorialPage: React.FC = () => {
   // Refresh solana mapping after assignment
   const handleAssignSuccess = async () => {
     try {
-      const solanaResponse = await fetch(`/api/solana/mapping/${id}`);
+      const solanaResponse = await fetch(`${API_BASE_URL}/api/solana/mapping/${id}`);
       if (solanaResponse.ok) {
         const solanaData = await solanaResponse.json();
         if (solanaData.mapping) {
@@ -527,7 +571,7 @@ const Web3MemorialPage: React.FC = () => {
         </div>
 
         {/* Pool Information - Show when assigned */}
-        {solanaMapping?.mint_address ? (
+        {solanaMapping && poolInfo ? (
           <>
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8 mb-8">
               <h2 className="text-2xl font-serif mb-4 flex items-center gap-2">
@@ -536,14 +580,13 @@ const Web3MemorialPage: React.FC = () => {
               </h2>
               <StakeUnstakePanel
                 solanaMapping={solanaMapping}
-                allPoolTokens={allPoolTokens}
-                walletAddress={walletAddress}
+                poolInfo={poolInfo}
               />
             </div>
 
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8 mb-8">
-              <PoolTokensList tokens={otherPoolTokens} />
-            </div>
+            {/* <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8 mb-8">
+              <PoolTokensList tokens={allPoolTokens} />
+            </div> */}
           </>
         ) : (
           /* Assign to Pool Block - Show when not assigned */
@@ -554,7 +597,6 @@ const Web3MemorialPage: React.FC = () => {
             </h2>
             <AssignToPool
               itemId={item.id}
-              walletAddress={walletAddress}
               onAssignSuccess={handleAssignSuccess}
             />
           </div>
@@ -566,7 +608,7 @@ const Web3MemorialPage: React.FC = () => {
             <Hexagon className="w-6 h-6 text-indigo-400" />
             Create Pool
           </h2>
-          <CreatePool walletAddress={walletAddress} multistake={multistake} />
+          <CreatePool />
         </div>
 
         {/* Web3 Notice */}

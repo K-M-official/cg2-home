@@ -1,6 +1,24 @@
 import type { Memorial, NewsItem, LeaderboardEntry } from './types';
 import { MemorialType } from './types';
-import { SHOP_ITEMS } from '../lib/constants';
+import { SHOP_ITEMS } from '../../lib/constants';
+
+export const API_BASE_URL = (() => {
+   const hostname = window.location.hostname;
+   if (hostname === 'localhost') {
+    return 'http://localhost:5174';
+   } else {
+    return 'https://api.permane.world';
+   }
+})()
+
+export const SOLANA_ENDPOINT = (() => {
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost') {
+    return 'http://localhost:8899';
+  } else {
+    return 'https://api.devnet.solana.com';
+  }
+})()
 
 export { SHOP_ITEMS };
 

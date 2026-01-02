@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Memorial } from '../types';
-import { MOCK_MEMORIALS } from '../constants';
-import { SHOP_ITEMS } from '../../lib/constants';
+import { MOCK_MEMORIALS, API_BASE_URL } from '../constants';
+import { SHOP_ITEMS } from '../../../lib/constants';
 
 // Group 类型定义
 export interface Group {
@@ -68,7 +68,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
     const fetchGroups = async () => {
       setLoadingGroups(true);
       try {
-        const response = await fetch('/api/groups');
+        const response = await fetch(`${API_BASE_URL}/api/groups`);
         if (!response.ok) throw new Error('Failed to fetch groups');
         const data = await response.json();
         setGroups(data.groups || []);
@@ -98,7 +98,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
             // 动态获取所有 groups 的 items
             if (groups.length === 0) {
                 // 如果还没有加载 groups，直接获取所有 items（不带 group_id 参数）
-                const response = await fetch('/api/items', { cache: 'no-store' });
+                const response = await fetch(`${API_BASE_URL}/api/items`, { cache: 'no-store' });
                 if (!isMounted) return;
                 
                 if (response.ok) {
@@ -108,7 +108,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
             } else {
                 // 并行请求所有 groups 的 items
                 const requests = groups.map(group => 
-                    fetch(`/api/items?group_id=${group.id}`, { cache: 'no-store' })
+                    fetch(`${API_BASE_URL}/api/items?group_id=${group.id}`, { cache: 'no-store' })
                 );
                 
                 const responses = await Promise.all(requests);
@@ -121,7 +121,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
                 fetchedItems = allData.flatMap(d => d.items || []);
             }
         } else {
-            const response = await fetch(`/api/items?group_id=${activeGroupId}`, { cache: 'no-store' });
+            const response = await fetch(`${API_BASE_URL}/api/items?group_id=${activeGroupId}`, { cache: 'no-store' });
             if (!isMounted) return;
             
             if (!response.ok) throw new Error('Failed to fetch items');
@@ -190,10 +190,10 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
       try {
           // 并行获取 item 信息、gallery、timeline 和 tributes
           const [itemResponse, galleryResponse, timelineResponse, tributesResponse] = await Promise.all([
-              fetch(`/api/item/stats?item_id=${id}`),
-              fetch(`/api/content/gallery?item_id=${id}`),
-              fetch(`/api/content/timeline?item_id=${id}`),
-              fetch(`/api/content/tribute?item_id=${id}`)
+              fetch(`${API_BASE_URL}/api/item/stats?item_id=${id}`),
+              fetch(`${API_BASE_URL}/api/content/gallery?item_id=${id}`),
+              fetch(`${API_BASE_URL}/api/content/timeline?item_id=${id}`),
+              fetch(`${API_BASE_URL}/api/content/tribute?item_id=${id}`)
           ]);
 
           if (itemResponse.ok) {
@@ -287,7 +287,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
   // 4. Offer Tribute Action
   const offerTribute = async (memorialId: string, tributeId: string) => {
       try {
-          const response = await fetch('/api/item/increment', {
+          const response = await fetch(`${API_BASE_URL}/api/item/increment`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ item_id: parseInt(memorialId), tribute_id: tributeId })
