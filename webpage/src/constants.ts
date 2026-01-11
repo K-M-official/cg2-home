@@ -1,26 +1,30 @@
 import type { Memorial, NewsItem, LeaderboardEntry } from './types';
 import { MemorialType } from './types';
-import { SHOP_ITEMS } from '../../lib/constants';
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  icon: string;
+  price: number;
+  type: 'candle' | 'flower' | 'toy' | 'food';
+  description: string;
+  delta?: number; 
+}
+
+export const SHOP_ITEMS: ShopItem[] = [
+  { id: 'candle', name: 'Eternal Flame', icon: '🕯️', price: 1, type: 'candle', description: 'Light a path for them.', delta: 1 },
+  { id: 'flower', name: 'White Rose', icon: '🌹', price: 5, type: 'flower', description: 'A symbol of pure love.', delta: 2 },
+  { id: 'wreath', name: 'Hero Wreath', icon: '🌿', price: 20, type: 'flower', description: 'Honoring great sacrifice.', delta: 5 },
+  { id: 'toy', name: 'Squeaky Toy', icon: '🎾', price: 3, type: 'toy', description: 'For the goodest boy/girl.', delta: 5 },
+  { id: 'treat', name: 'Heavenly Treat', icon: '🦴', price: 2, type: 'food', description: 'A favorite snack.', delta: 5 },
+];
 
 export const API_BASE_URL = (() => {
-   const hostname = window.location.hostname;
-   if (hostname === 'localhost') {
-    return 'http://localhost:5174';
-   } else {
-    return 'https://api.permane.world';
-   }
-})()
-
-export const SOLANA_ENDPOINT = (() => {
-  const hostname = window.location.hostname;
-  if (hostname === 'localhost') {
-    return 'http://localhost:8899';
-  } else {
-    return 'https://api.devnet.solana.com';
+  if (window.location.hostname === 'localhost') {
+    return 'http://localhost:5173';
   }
+  return 'https://api.permane.world';
 })()
-
-export { SHOP_ITEMS };
 
 export const MEMORIAL_TEMPLATES = [
   {

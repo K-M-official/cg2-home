@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Memorial } from '../types';
-import { MOCK_MEMORIALS, API_BASE_URL } from '../constants';
-import { SHOP_ITEMS } from '../../../lib/constants';
+import { API_BASE_URL, MOCK_MEMORIALS } from '../constants';
+import { SHOP_ITEMS } from '../constants';
 
 // Group 类型定义
 export interface Group {
@@ -108,7 +108,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
             } else {
                 // 并行请求所有 groups 的 items
                 const requests = groups.map(group => 
-                    fetch(`${API_BASE_URL}/api/items?group_id=${group.id}`, { cache: 'no-store' })
+                    fetch(`/api/items?group_id=${group.id}`, { cache: 'no-store' })
                 );
                 
                 const responses = await Promise.all(requests);

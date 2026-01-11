@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { LeaderboardEntry } from '../types';
-import { MOCK_MEMORIALS, API_BASE_URL } from '../constants';
+import { API_BASE_URL, MOCK_MEMORIALS } from '../constants';
 
 interface LeaderboardApiItem {
   rank: number;

@@ -13,7 +13,7 @@ export const StarryBackground: React.FC = () => {
   }));
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0">
+    <div className="absolute inset-0 pointer-events-none z-0">
       {/* 渐变背景 */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0F172A] via-[#1E293B] to-[#0F172A]"></div>
 

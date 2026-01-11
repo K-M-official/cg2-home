@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { MultiStakeSDK } from 'multistake';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { AnchorProvider } from '@coral-xyz/anchor';
-import { SOLANA_ENDPOINT } from '../constants';
 
 interface Web3ContextType {
   isWeb3Mode: boolean;
@@ -10,30 +9,17 @@ interface Web3ContextType {
   walletAddress: string | null;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
-  isConnecting: boolean;
   multistake: MultiStakeSDK | null;
 }
 
-function makeSDK() {
-  const { solana } = window as any;
-
-  if (!solana || !solana.isPhantom) {
-    console.error('Please install Phantom wallet: https://phantom.app/');
-    window.open('https://phantom.app/', '_blank');
-    return null;
-  }
-
-  const connection = new Connection(SOLANA_ENDPOINT, 'confirmed');
-  const provider = new AnchorProvider(
-    connection,
-    solana,
-    { commitment: 'confirmed' }
-  );
-
-  return MultiStakeSDK.create(provider);
-}
-
 const Web3Context = createContext<Web3ContextType | undefined>(undefined);
+
+// 获取 Solana RPC endpoint
+const getEndpoint = () => {
+  return window.location.hostname === 'localhost'
+    ? 'http://192.168.31.134:8899'
+    : 'https://api.devnet.solana.com';
+};
 
 export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isWeb3Mode, setIsWeb3Mode] = useState<boolean>(() => {
@@ -41,11 +27,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     return saved === 'true';
   });
 
-  const [walletAddress, setWalletAddress] = useState<string | null>(() => {
-    return localStorage.getItem('wallet_address');
-  });
-
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [multistake, setMultistake] = useState<MultiStakeSDK | null>(null);
 
   const toggleWeb3Mode = () => {
@@ -56,62 +38,127 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  useEffect(() => {
-    localStorage.setItem('web3_mode', String(isWeb3Mode));
-  }, [isWeb3Mode]);
+  // 统一的 SDK 初始化函数
+  const initializeSDK = useCallback(() => {
+    const { solana } = window as any;
 
-  // 页面加载时自动初始化 SDK（如果钱包已连接）
+    console.log('[SDK Init] Called - isConnected:', solana?.isConnected, 'publicKey:', solana?.publicKey?.toString());
+
+    if (!solana?.isConnected || !solana?.publicKey) {
+      setMultistake(null);
+      return;
+    }
+
+    console.log('[SDK Init] Starting initialization...');
+    try {
+      const connection = new Connection(getEndpoint(), 'confirmed');
+      const provider = new AnchorProvider(connection, solana, { commitment: 'confirmed' });
+      const sdk = MultiStakeSDK.create(provider);
+      setMultistake(sdk);
+      console.log('[SDK Init] ✅ Success');
+    } catch (error) {
+      console.error('[SDK Init] ❌ Failed:', error);
+      setMultistake(null);
+    }
+  }, []);
+
+  // 页面加载时自动连接
   useEffect(() => {
-    const initSDK = async () => {
-       const sdk = makeSDK();
-      if (sdk) {
-        setMultistake(sdk);
-        console.log('MultiStakeSDK initialized successfully');
-      } else {
-        console.error('Failed to initialize MultiStakeSDK');
+    const autoConnect = async () => {
+      console.log('[Auto Connect] Checking Phantom wallet...');
+      const { solana } = window as any;
+      console.log('[Auto Connect] solana object:', solana);
+      console.log('[Auto Connect] isPhantom:', solana?.isPhantom);
+
+      if (!solana?.isPhantom) {
+        console.log('[Auto Connect] Phantom not found');
+        return;
+      }
+
+      console.log('[Auto Connect] Attempting to connect with onlyIfTrusted...');
+      try {
+        const response = await solana.connect({ onlyIfTrusted: true });
+        console.log('[Auto Connect] ✅ Success:', response.publicKey.toString());
+        setWalletAddress(response.publicKey.toString());
+        initializeSDK();
+      } catch (error) {
+        console.log('[Auto Connect] No trusted connection, error:', error);
       }
     };
 
-    initSDK();
-  }, [walletAddress]);
+    autoConnect();
+  }, [initializeSDK]);
 
+  // 监听钱包事件
+  useEffect(() => {
+    const { solana } = window as any;
+    if (!solana) return;
+
+    const handleConnect = (publicKey: PublicKey) => {
+      console.log('[Wallet Event] connect ->', publicKey.toString());
+      setWalletAddress(publicKey.toString());
+      initializeSDK();
+    };
+
+    const handleDisconnect = () => {
+      console.log('[Wallet Event] disconnect');
+      setWalletAddress(null);
+      setMultistake(null);
+    };
+
+    const handleAccountChanged = (publicKey: PublicKey | null) => {
+      console.log('[Wallet Event] accountChanged ->', publicKey?.toString() || 'null');
+      if (publicKey) {
+        setWalletAddress(publicKey.toString());
+        initializeSDK();
+      } else {
+        setWalletAddress(null);
+        setMultistake(null);
+      }
+    };
+
+    solana.on('connect', handleConnect);
+    solana.on('disconnect', handleDisconnect);
+    solana.on('accountChanged', handleAccountChanged);
+
+    return () => {
+      solana.removeListener('connect', handleConnect);
+      solana.removeListener('disconnect', handleDisconnect);
+      solana.removeListener('accountChanged', handleAccountChanged);
+    };
+  }, [initializeSDK]);
+
+  // 连接钱包
   const connectWallet = async () => {
-    setIsConnecting(true);
+    console.log('[Connect Wallet] User clicked connect button');
     try {
       const { solana } = window as any;
 
-      if (!solana || !solana.isPhantom) {
-        console.error('Please install Phantom wallet: https://phantom.app/');
+      if (!solana?.isPhantom) {
+        console.log('[Connect Wallet] Phantom not installed');
+        alert('Please install Phantom wallet: https://phantom.app/');
         window.open('https://phantom.app/', '_blank');
         return;
       }
 
+      console.log('[Connect Wallet] Requesting connection...');
       const response = await solana.connect();
-      const address = response.publicKey.toString();
-
-      setWalletAddress(address);
-      localStorage.setItem('wallet_address', address);
-
-      console.log('Connected to wallet:', address);
-
-      // 每次连接后重新初始化 MultiStakeSDK
-      const sdk = makeSDK();  
-      if (sdk) {
-        setMultistake(sdk);
-        console.log('MultiStakeSDK initialized successfully');
-      } else {
-        console.error('Failed to initialize MultiStakeSDK');
-      }
-    } finally {
-      setIsConnecting(false);
+      console.log('[Connect Wallet] ✅ Connected:', response.publicKey.toString());
+      setWalletAddress(response.publicKey.toString());
+      initializeSDK();
+    } catch (error) {
+      console.error('[Connect Wallet] ❌ Failed:', error);
+      alert('Failed to connect wallet');
     }
   };
 
-  const disconnectWallet = () => {
+  // 断开钱包
+  const disconnectWallet = async () => {
+    const { solana } = window as any;
+    if (solana) await solana.disconnect();
+
     setWalletAddress(null);
-    localStorage.removeItem('wallet_address');
-    setMultistake(null); // 清除 MultiStakeSDK 实例
-    console.log('Wallet disconnected');
+    setMultistake(null);
   };
 
   return (
@@ -121,7 +168,6 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       walletAddress,
       connectWallet,
       disconnectWallet,
-      isConnecting,
       multistake
     }}>
       {children}

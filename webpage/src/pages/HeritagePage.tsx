@@ -16,7 +16,7 @@ export const HeritagePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 pt-24 pb-20 overflow-hidden relative">
+    <div className="bg-[#020617] text-slate-200 pt-24 pb-20 overflow-hidden relative">
       
       {/* Background Ambience with Tech Grid */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">

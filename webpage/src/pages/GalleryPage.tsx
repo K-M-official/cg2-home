@@ -49,8 +49,8 @@ const GalleryPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-24 pb-20 px-6">
-      
+    <div className="bg-slate-50 pt-24 pb-20 px-6">
+
       {/* 1. HERO HEADER */}
       <div className="max-w-7xl mx-auto mb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider mb-6 border border-indigo-100">

@@ -55,7 +55,7 @@ export const UserProfile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-24 flex items-center justify-center">
+      <div className="pt-24 py-32 flex items-center justify-center">
         <div className="text-white">Loading...</div>
       </div>
     );
@@ -77,7 +77,7 @@ export const UserProfile: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen pt-24">
+    <div className="pt-24">
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex gap-6">
           {/* Left Sidebar - Drawer */}

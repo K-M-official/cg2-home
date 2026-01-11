@@ -619,7 +619,7 @@ const MemorialPage: React.FC = () => {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${API_BASE_URL}/api/content/gallery`, {
+      const response = await fetch( `${API_BASE_URL}/api/content/gallery`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -710,11 +710,11 @@ const MemorialPage: React.FC = () => {
     ? Object.values(memorial.gongpinStats).reduce((a: any, b: any) => a + b, 0)
     : 0;
 
-  if (loadingMemorial) return <div className="min-h-screen flex items-center justify-center bg-slate-50">Loading...</div>;
-  if (!memorial) return <div className="min-h-screen flex items-center justify-center bg-slate-50">Memorial not found</div>;
+  if (loadingMemorial) return <div className="flex items-center justify-center bg-slate-50 py-32">Loading...</div>;
+  if (!memorial) return <div className="flex items-center justify-center bg-slate-50 py-32">Memorial not found</div>;
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900">
+    <div className="bg-white font-sans text-slate-900">
       <VirtualShop
         isOpen={isShopOpen}
         onClose={() => setIsShopOpen(false)}

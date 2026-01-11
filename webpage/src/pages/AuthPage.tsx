@@ -122,7 +122,7 @@ const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-32 px-4">
+    <div className="flex items-center justify-center py-32 px-4">
       <div className="relative z-10 bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl max-w-md w-full">
         {/* Tab 切换 */}
         <div className="flex border-b border-slate-800 rounded-t-2xl overflow-hidden">

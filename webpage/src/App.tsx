@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './Layout';
 import HomePage from './pages/HomePage';
 import CreatePage from './pages/CreatePage';
+import CloudSpacePage from './pages/CloudSpacePage';
 import MemorialPageRouter from './components/MemorialPageRouter';
 import GalleryPage from './pages/GalleryPage';
 import HeritagePage from './pages/HeritagePage';
@@ -53,6 +54,7 @@ const App: React.FC = () => {
                     <Route path="/" element={<Layout />}>
                       <Route index element={<HomePage />} />
                       <Route path="create" element={<CreatePage />} />
+                      <Route path="cloud-space" element={<CloudSpacePage />} />
                       <Route path="memorial/:id" element={<MemorialPageRouter />} />
                       <Route path="gallery" element={<GalleryPage />} />
                       <Route path="heritage" element={<HeritagePage />} />

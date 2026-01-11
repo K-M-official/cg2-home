@@ -7,7 +7,7 @@ const AboutPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen pt-24 pb-12 bg-slate-50">
+    <div className="pt-24 pb-12 bg-slate-50">
       <div className="max-w-5xl mx-auto px-6">
         
         <div className="mb-8">

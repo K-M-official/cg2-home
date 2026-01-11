@@ -4,7 +4,6 @@ import { Button } from '../components/UI';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Upload, ChevronRight, ChevronLeft, Hexagon, Cloud, Lock, Wallet } from 'lucide-react';
 import { useWeb3 } from '../context/Web3Context';
-import { API_BASE_URL } from '../constants';
 
 export const CreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -37,7 +36,7 @@ export const CreatePage: React.FC = () => {
   useEffect(() => {
     const fetchGroups = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/groups`);
+            const res = await fetch('/api/groups');
             if (res.ok) {
                 const data = await res.json();
                 if (data.groups && Array.isArray(data.groups)) {
@@ -107,7 +106,7 @@ export const CreatePage: React.FC = () => {
               formDataToSend.append('coverImage', coverImageFile);
           }
 
-          const res = await fetch(`${API_BASE_URL}/api/items`, {
+          const res = await fetch('/api/items', {
               method: 'POST',
               body: formDataToSend
               // 不设置 Content-Type，让浏览器自动设置 multipart/form-data 边界
@@ -340,7 +339,7 @@ export const CreatePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center pt-24 pb-12 px-6">
+    <div className="bg-slate-50 flex flex-col items-center pt-24 pb-12 px-6">
 
       {/* Web3 Mode Warning */}
       {isWeb3Mode && (

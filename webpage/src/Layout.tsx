@@ -18,13 +18,19 @@ const Layout: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
 
   // UI 控制
-  const { navbarVisible } = useUI();
+  const { navbarVisible, isDarkMode } = useUI();
 
   // Web3 模式控制
-  const { isWeb3Mode, toggleWeb3Mode, walletAddress, connectWallet, disconnectWallet, isConnecting } = useWeb3();
+  const { isWeb3Mode, toggleWeb3Mode, walletAddress, connectWallet, disconnectWallet } = useWeb3();
 
-  // Check if we are on a dark themed page
-  const isDarkPage = location.pathname === '/' || location.pathname === '/heritage' || location.pathname === '/auth' || location.pathname === '/profile';
+  // 判断哪些页面需要显示星空背景（排除浅色页面）
+  const shouldShowStarryBg = isDarkMode && (
+    location.pathname === '/' ||
+    location.pathname === '/cloud-space' ||
+    location.pathname === '/heritage' ||
+    location.pathname === '/auth' ||
+    location.pathname === '/profile'
+  );
 
   // Scroll detection
   useEffect(() => {
@@ -40,6 +46,7 @@ const Layout: React.FC = () => {
 
   const navLinks = [
     { name: 'Home', path: '/' },
+    { name: 'Cloud Space', path: '/cloud-space' },
     { name: 'Gallery', path: '/gallery' },
     { name: 'Heritage & Tokens', path: '/heritage' },
     { name: 'Create', path: '/create', hideInWeb3: true },
@@ -48,13 +55,13 @@ const Layout: React.FC = () => {
   const getNavTextColor = () => {
     if (mobileMenuOpen) return 'text-slate-800';
     if (isScrolled) return 'text-slate-800';
-    if (isDarkPage) return 'text-white/90';
+    if (shouldShowStarryBg) return 'text-white/90';
     return 'text-slate-800';
   };
-  
+
   const getNavBorderColor = () => {
       if (isScrolled) return 'border-slate-800';
-      if (isDarkPage) return 'border-white';
+      if (shouldShowStarryBg) return 'border-white';
       return 'border-slate-800';
   };
 
@@ -63,16 +70,13 @@ const Layout: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen font-sans relative">
-      {/* 星空背景 - 全局常驻 */}
-      {isDarkPage && <StarryBackground />}
-
       {/* Navbar - 根据 navbarVisible 控制显示 */}
       {navbarVisible && (
         <nav
           className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-md py-4 shadow-sm' : 'bg-transparent py-6'}`}
         >
         <div className="w-full px-4 lg:px-6 flex justify-between items-center overflow-hidden">
-          <div className={`cursor-pointer z-50 flex-shrink-0 ${textColorClass} ${isDarkPage ? 'invert' : ''}`} onClick={() => navigate('/')}>
+          <div className={`cursor-pointer z-50 flex-shrink-0 ${textColorClass} ${shouldShowStarryBg ? 'invert' : ''}`} onClick={() => navigate('/')}>
             <LOGO />
           </div>
 
@@ -112,11 +116,10 @@ const Layout: React.FC = () => {
                ) : (
                  <button
                    onClick={connectWallet}
-                   disabled={isConnecting}
                    className={`px-4 py-2 rounded-full border text-xs uppercase tracking-widest hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all flex items-center gap-2 ${borderColorClass} ${textColorClass}`}
                  >
                    <Wallet size={14} />
-                   {isConnecting ? 'Connecting...' : 'Connect'}
+                   Connect
                  </button>
                )
              ) : (
@@ -213,11 +216,10 @@ const Layout: React.FC = () => {
                       ) : (
                         <button
                           onClick={connectWallet}
-                          disabled={isConnecting}
                           className="px-5 py-2 rounded-full border border-slate-800 text-xs uppercase tracking-widest hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all flex items-center gap-2 mt-4"
                         >
                           <Wallet size={14} />
-                          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                          Connect Wallet
                         </button>
                       )
                     ) : (
@@ -257,12 +259,14 @@ const Layout: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-grow relative z-10">
+        {/* 星空背景 - 只在深色页面显示 */}
+        {shouldShowStarryBg && <StarryBackground />}
         <Outlet />
       </main>
 
       {/* Footer */}
       <footer className="w-full bg-slate-900 text-slate-300 py-16 border-t border-slate-800">
-         <div className="mx-auto px-6 grid lg:grid-cols-4 gap-12">
+         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-4 gap-12">
              <div className="col-span-2">
                  <h2 className="font-serif text-2xl text-white mb-4">K&M ERA</h2>
                  <p className="font-light text-sm leading-relaxed max-w-sm opacity-80">
@@ -272,9 +276,9 @@ const Layout: React.FC = () => {
              <div>
                  <h4 className="uppercase text-xs tracking-widest text-white mb-6">Product Lines</h4>
                  <ul className="space-y-4 text-sm font-light">
-                     <li><button onClick={() => navigate('/create')} className="hover:text-white transition-colors">Cloud Memorial</button></li>
-                     <li><button onClick={() => navigate('/gallery')} className="hover:text-white transition-colors">Remembrance Gallery</button></li>
-                     <li><button onClick={() => navigate('/heritage')} className="hover:text-white transition-colors">Heritage Tokens</button></li>
+                     <li><button onClick={() => navigate('/cloud-space')} className="hover:text-white transition-colors">Cloud Space</button></li>
+                     <li><button onClick={() => navigate('/gallery')} className="hover:text-white transition-colors">Gallery</button></li>
+                     <li><button onClick={() => navigate('/heritage')} className="hover:text-white transition-colors">Heritage</button></li>
                  </ul>
              </div>
              <div>
